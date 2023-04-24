@@ -1,6 +1,6 @@
 #include <Novice.h>
 #define _USE_MATH_DEFINES
-#include <math.h>
+#include <cmath>
 #include <assert.h>
 
 
@@ -14,59 +14,97 @@ struct Matrix4x4 {
 	float m[4][4];
 };
 
-Matrix4x4 MakeTranselateMatrix(const Vector3& translate) {
-	Matrix4x4 MakeTranslateMatrix;
-	MakeTranslateMatrix.m[0][0] = 1;
-	MakeTranslateMatrix.m[0][1] = 0;
-	MakeTranslateMatrix.m[0][2] = 0;
-	MakeTranslateMatrix.m[0][3] = 0;
-	MakeTranslateMatrix.m[1][0] = 0;
-	MakeTranslateMatrix.m[1][1] = 1;
-	MakeTranslateMatrix.m[1][2] = 0;
-	MakeTranslateMatrix.m[1][3] = 0;
-	MakeTranslateMatrix.m[2][0] = 0;
-	MakeTranslateMatrix.m[2][1] = 0;
-	MakeTranslateMatrix.m[2][2] = 1;
-	MakeTranslateMatrix.m[2][3] = 0;
-	MakeTranslateMatrix.m[3][0] = translate.x;
-	MakeTranslateMatrix.m[3][1] = translate.y;
-	MakeTranslateMatrix.m[3][2] = translate.z;
-	MakeTranslateMatrix.m[3][3] = 1;
-	return MakeTranslateMatrix;
-};
+//回転X
+Matrix4x4 MakeRotateXMatrix(float theta = 0) {
+	Matrix4x4 MakeRotateMatrix;
+	MakeRotateMatrix.m[0][0] = 1;
+	MakeRotateMatrix.m[0][1] = 0;
+	MakeRotateMatrix.m[0][2] = 0;
+	MakeRotateMatrix.m[0][3] = 0;
+	MakeRotateMatrix.m[1][0] = 0;
+	MakeRotateMatrix.m[1][1] = cos(theta);
+	MakeRotateMatrix.m[1][2] = sin(theta);
+	MakeRotateMatrix.m[1][3] = 0;
+	MakeRotateMatrix.m[2][0] = 0;
+	MakeRotateMatrix.m[2][1] = -sin(theta);
+	MakeRotateMatrix.m[2][2] = cos(theta);
+	MakeRotateMatrix.m[2][3] = 0;
+	MakeRotateMatrix.m[3][0] = 0;
+	MakeRotateMatrix.m[3][1] = 0;
+	MakeRotateMatrix.m[3][2] = 0;
+	MakeRotateMatrix.m[3][3] = 1;
+	return MakeRotateMatrix;
 
-Matrix4x4 MakeScaleMatrix(const Vector3& scale) {
-	Matrix4x4 MakeScaleMatrix;
-	MakeScaleMatrix.m[0][0] = scale.x;
-	MakeScaleMatrix.m[0][1] = 0;
-	MakeScaleMatrix.m[0][2] = 0;
-	MakeScaleMatrix.m[0][3] = 0;
-	MakeScaleMatrix.m[1][0] = 0;
-	MakeScaleMatrix.m[1][1] = scale.y;
-	MakeScaleMatrix.m[1][2] = 0;
-	MakeScaleMatrix.m[1][3] = 0;
-	MakeScaleMatrix.m[2][0] = 0;
-	MakeScaleMatrix.m[2][1] = 0;
-	MakeScaleMatrix.m[2][2] = scale.z;
-	MakeScaleMatrix.m[2][3] = 0;
-	MakeScaleMatrix.m[3][0] = 0;
-	MakeScaleMatrix.m[3][1] = 0;
-	MakeScaleMatrix.m[3][2] = 0;
-	MakeScaleMatrix.m[3][3] = 1;
-	return MakeScaleMatrix;
-};
+}
+//Y
+Matrix4x4 MakeRotateYMatrix(float theta = 0) {
+	Matrix4x4 MakeRotateMatrix;
+	MakeRotateMatrix.m[0][0] = cos(theta);
+	MakeRotateMatrix.m[0][1] = 0;
+	MakeRotateMatrix.m[0][2] = sin(theta);
+	MakeRotateMatrix.m[0][3] = 0;
+	MakeRotateMatrix.m[1][0] = 0;
+	MakeRotateMatrix.m[1][1] = 1;
+	MakeRotateMatrix.m[1][2] = 0;
+	MakeRotateMatrix.m[1][3] = 0;
+	MakeRotateMatrix.m[2][0] = -sin(theta);;
+	MakeRotateMatrix.m[2][1] = 0;
+	MakeRotateMatrix.m[2][2] = cos(theta);
+	MakeRotateMatrix.m[2][3] = 0;
+	MakeRotateMatrix.m[3][0] = 0;
+	MakeRotateMatrix.m[3][1] = 0;
+	MakeRotateMatrix.m[3][2] = 0;
+	MakeRotateMatrix.m[3][3] = 1;
+	return MakeRotateMatrix;
 
-Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
-	Vector3 result;
-	result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0] + 1.0f * matrix.m[3][0];
-	result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1] + 1.0f * matrix.m[3][1];
-	result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2] + 1.0f * matrix.m[3][2];
-	float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] + 1.0f * matrix.m[3][3];
-	assert(w!= 0.0f);
-	result.x /= w;
-	result.y /= w;
-	result.z /= w;
-	return result;
+}
+//Z
+Matrix4x4 MakeRotateZMatrix(float theta = 0) {
+	Matrix4x4 MakeRotateMatrix;
+	MakeRotateMatrix.m[0][0] = cos(theta);
+	MakeRotateMatrix.m[0][1] = sin(theta);
+	MakeRotateMatrix.m[0][2] = 0;
+	MakeRotateMatrix.m[0][3] = 0;
+	MakeRotateMatrix.m[1][0] = -sin(theta);
+	MakeRotateMatrix.m[1][1] = cos(theta);
+	MakeRotateMatrix.m[1][2] = 0;
+	MakeRotateMatrix.m[1][3] = 0;
+	MakeRotateMatrix.m[2][0] = 0;
+	MakeRotateMatrix.m[2][1] = 0;
+	MakeRotateMatrix.m[2][2] = 1;
+	MakeRotateMatrix.m[2][3] = 0;
+	MakeRotateMatrix.m[3][0] = 0;
+	MakeRotateMatrix.m[3][1] = 0;
+	MakeRotateMatrix.m[3][2] = 0;
+	MakeRotateMatrix.m[3][3] = 1;
+	return MakeRotateMatrix;
+
+}
+
+//スカラー倍
+Matrix4x4 Multiply(const Matrix4x4& m1, const  Matrix4x4& m2) {
+	Matrix4x4 multiply;
+	multiply.m[0][0] = m1.m[0][0] * m2.m[0][0] + m1.m[0][1] * m2.m[1][0] + m1.m[0][2] * m2.m[2][0] + m1.m[0][3] * m2.m[3][0];
+	multiply.m[0][1] = m1.m[0][0] * m2.m[0][1] + m1.m[0][1] * m2.m[1][1] + m1.m[0][2] * m2.m[2][1] + m1.m[0][3] * m2.m[3][1];
+	multiply.m[0][2] = m1.m[0][0] * m2.m[0][2] + m1.m[0][1] * m2.m[1][2] + m1.m[0][2] * m2.m[2][2] + m1.m[0][3] * m2.m[3][2];
+	multiply.m[0][3] = m1.m[0][0] * m2.m[0][3] + m1.m[0][1] * m2.m[1][3] + m1.m[0][2] * m2.m[2][3] + m1.m[0][3] * m2.m[3][3];
+
+	multiply.m[1][0] = m1.m[1][0] * m2.m[0][0] + m1.m[1][1] * m2.m[1][0] + m1.m[1][2] * m2.m[2][0] + m1.m[1][3] * m2.m[3][0];
+	multiply.m[1][1] = m1.m[1][0] * m2.m[0][1] + m1.m[1][1] * m2.m[1][1] + m1.m[1][2] * m2.m[2][1] + m1.m[1][3] * m2.m[3][1];
+	multiply.m[1][2] = m1.m[1][0] * m2.m[0][2] + m1.m[1][1] * m2.m[1][2] + m1.m[1][2] * m2.m[2][2] + m1.m[1][3] * m2.m[3][2];
+	multiply.m[1][3] = m1.m[1][0] * m2.m[0][3] + m1.m[1][1] * m2.m[1][3] + m1.m[1][2] * m2.m[2][3] + m1.m[1][3] * m2.m[3][3];
+
+	multiply.m[2][0] = m1.m[2][0] * m2.m[0][0] + m1.m[2][1] * m2.m[1][0] + m1.m[2][2] * m2.m[2][0] + m1.m[2][3] * m2.m[3][0];
+	multiply.m[2][1] = m1.m[2][0] * m2.m[0][1] + m1.m[2][1] * m2.m[1][1] + m1.m[2][2] * m2.m[2][1] + m1.m[2][3] * m2.m[3][1];
+	multiply.m[2][2] = m1.m[2][0] * m2.m[0][2] + m1.m[2][1] * m2.m[1][2] + m1.m[2][2] * m2.m[2][2] + m1.m[2][3] * m2.m[3][2];
+	multiply.m[2][3] = m1.m[2][0] * m2.m[0][3] + m1.m[2][1] * m2.m[1][3] + m1.m[2][2] * m2.m[2][3] + m1.m[2][3] * m2.m[3][3];
+
+	multiply.m[3][0] = m1.m[3][0] * m2.m[0][0] + m1.m[3][1] * m2.m[1][0] + m1.m[3][2] * m2.m[2][0] + m1.m[3][3] * m2.m[3][0];
+	multiply.m[3][1] = m1.m[3][0] * m2.m[0][1] + m1.m[3][1] * m2.m[1][1] + m1.m[3][2] * m2.m[2][1] + m1.m[3][3] * m2.m[3][1];
+	multiply.m[3][2] = m1.m[3][0] * m2.m[0][2] + m1.m[3][1] * m2.m[1][2] + m1.m[3][2] * m2.m[2][2] + m1.m[3][3] * m2.m[3][2];
+	multiply.m[3][3] = m1.m[3][0] * m2.m[0][3] + m1.m[3][1] * m2.m[1][3] + m1.m[3][2] * m2.m[2][3] + m1.m[3][3] * m2.m[3][3];
+
+	return  multiply;
 };
 
 
@@ -105,15 +143,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
 
-	Vector3 translate{ 4.1f,2.6f,0.8f };
-	Vector3 scale{ 1.5f,5.2f,7.3f };
-	Vector3 point{ 2.3f,3.8f,1.4f };
-	Matrix4x4 transformMatrix = {
-		1.0f,2.0f,3.0f,4.0f,
-		3.0f,1.0f,1.0f,2.0f,
-		1.0f,4.0f,2.0f,3.0f,
-		2.0f,2.0f,1.0f,3.0f,
-	};
+	Vector3 rotate{ 0.4f,1.43f,-0.8f };
+	
 	
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -128,21 +159,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Matrix4x4 translateMatrix = MakeTranselateMatrix(translate);
-		Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
-		Vector3 transformed = Transform(point, transformMatrix);
+		Matrix4x4 rotateXMatrix = MakeRotateXMatrix(rotate.x);
+		Matrix4x4 rotateYMatrix = MakeRotateYMatrix(rotate.y);
+		Matrix4x4 rotateZMatrix = MakeRotateZMatrix(rotate.z);
+		Matrix4x4 rotateXYZMatrix = Multiply(rotateXMatrix, Multiply(rotateYMatrix, rotateZMatrix));
 
 		///
 		/// ↑更新処理ここまで
 		///
 
+		MatrixScreenPrintf(0, 0, rotateXMatrix, "rotateXMatrix");
+		MatrixScreenPrintf(0, kRowHeight * 5, rotateYMatrix, "rotateYMatrix");
+		MatrixScreenPrintf(0, kRowHeight * 5*2, rotateZMatrix, "rotateZMatrix");
+		MatrixScreenPrintf(0, kRowHeight * 5*3, rotateXYZMatrix, "rotateXYZMatrix");
+
 		///
 		/// ↓描画処理ここから
 		///
 
-		VectorScreenPrintf(0, 0, transformed, "transformed");
-		MatrixScreenPrintf(0, 20, translateMatrix, "translateMatrix");
-		MatrixScreenPrintf(0, kRowHeight * 5+20, scaleMatrix, "scaleMatrix");
+		
 
 		///
 		/// ↑描画処理ここまで
