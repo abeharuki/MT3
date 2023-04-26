@@ -14,6 +14,8 @@ struct Matrix4x4 {
 	float m[4][4];
 };
 
+
+
 //回転X
 Matrix4x4 MakeRotateXMatrix(float theta = 0) {
 	Matrix4x4 MakeRotateMatrix;
@@ -107,7 +109,49 @@ Matrix4x4 Multiply(const Matrix4x4& m1, const  Matrix4x4& m2) {
 	return  multiply;
 };
 
+Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
+	Vector3 result;
+	result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0] + 1.0f * matrix.m[3][0];
+	result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1] + 1.0f * matrix.m[3][1];
+	result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2] + 1.0f * matrix.m[3][2];
+	float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] + 1.0f * matrix.m[3][3];
+	assert(w != 0.0f);
+	result.x /= w;
+	result.y /= w;
+	result.z /= w;
+	return result;
+};
 
+
+Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
+	//回転
+	Matrix4x4 rotateXMatrix = MakeRotateXMatrix(rotate.x);
+	Matrix4x4 rotateYMatrix = MakeRotateYMatrix(rotate.y);
+	Matrix4x4 rotateZMatrix = MakeRotateZMatrix(rotate.z);
+	Matrix4x4 rotateXYZMatrix = Multiply(rotateXMatrix, Multiply(rotateYMatrix, rotateZMatrix));
+
+
+	Matrix4x4 MakeAffineMatrix;
+	MakeAffineMatrix.m[0][0] = scale.x * rotateXYZMatrix.m[0][0];
+	MakeAffineMatrix.m[0][1] = scale.x * rotateXYZMatrix.m[0][1];
+	MakeAffineMatrix.m[0][2] = scale.x * rotateXYZMatrix.m[0][2];
+	MakeAffineMatrix.m[0][3] = 0;
+	MakeAffineMatrix.m[1][0] = scale.y * rotateXYZMatrix.m[1][0];
+	MakeAffineMatrix.m[1][1] = scale.y * rotateXYZMatrix.m[1][1];
+	MakeAffineMatrix.m[1][2] = scale.y * rotateXYZMatrix.m[1][2];
+	MakeAffineMatrix.m[1][3] = 0;
+	MakeAffineMatrix.m[2][0] = scale.z * rotateXYZMatrix.m[2][0];
+	MakeAffineMatrix.m[2][1] = scale.z * rotateXYZMatrix.m[2][1];
+	MakeAffineMatrix.m[2][2] = scale.z * rotateXYZMatrix.m[2][2];
+	MakeAffineMatrix.m[2][3] = 0;
+	MakeAffineMatrix.m[3][0] = translate.x;
+	MakeAffineMatrix.m[3][1] = translate.y;
+	MakeAffineMatrix.m[3][2] = translate.z;
+	MakeAffineMatrix.m[3][3] = 1;
+	return MakeAffineMatrix;
+
+
+}
 
 static const int kRowHeight = 20;
 static const int kColumnWidth = 60;
@@ -143,8 +187,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
 
+	Vector3 scale{ 1.2f,0.79f,-2.1f };
 	Vector3 rotate{ 0.4f,1.43f,-0.8f };
-	
+	Vector3 translate{ 2.7f,-4.15f,1.57f };
 	
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -159,19 +204,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Matrix4x4 rotateXMatrix = MakeRotateXMatrix(rotate.x);
-		Matrix4x4 rotateYMatrix = MakeRotateYMatrix(rotate.y);
-		Matrix4x4 rotateZMatrix = MakeRotateZMatrix(rotate.z);
-		Matrix4x4 rotateXYZMatrix = Multiply(rotateXMatrix, Multiply(rotateYMatrix, rotateZMatrix));
+		Matrix4x4 worldMatrix = MakeAffineMatrix(scale, rotate, translate);
 
 		///
 		/// ↑更新処理ここまで
 		///
 
-		MatrixScreenPrintf(0, 0, rotateXMatrix, "rotateXMatrix");
-		MatrixScreenPrintf(0, kRowHeight * 5, rotateYMatrix, "rotateYMatrix");
-		MatrixScreenPrintf(0, kRowHeight * 5*2, rotateZMatrix, "rotateZMatrix");
-		MatrixScreenPrintf(0, kRowHeight * 5*3, rotateXYZMatrix, "rotateXYZMatrix");
+		MatrixScreenPrintf(0, 0, worldMatrix, "worldMatrix");
+	
 
 		///
 		/// ↓描画処理ここから
