@@ -41,13 +41,13 @@ Matrix4x4 MakeRotateYMatrix(float theta = 0) {
 	Matrix4x4 MakeRotateMatrix;
 	MakeRotateMatrix.m[0][0] = std::cos(theta);
 	MakeRotateMatrix.m[0][1] = 0;
-	MakeRotateMatrix.m[0][2] = std::sin(theta);
+	MakeRotateMatrix.m[0][2] = -std::sin(theta);
 	MakeRotateMatrix.m[0][3] = 0;
 	MakeRotateMatrix.m[1][0] = 0;
 	MakeRotateMatrix.m[1][1] = 1;
 	MakeRotateMatrix.m[1][2] = 0;
 	MakeRotateMatrix.m[1][3] = 0;
-	MakeRotateMatrix.m[2][0] = -std::sin(theta);;
+	MakeRotateMatrix.m[2][0] = std::sin(theta);;
 	MakeRotateMatrix.m[2][1] = 0;
 	MakeRotateMatrix.m[2][2] = std::cos(theta);
 	MakeRotateMatrix.m[2][3] = 0;
