@@ -22,6 +22,7 @@ struct Matrix4x4 {
 };
 
 //  クォータニオン作成
+// q = w + xi + yj + zk
 //　axis　回転させる軸
 // radian 回転させる角度
 //return  作成したクォータニオン
@@ -36,6 +37,8 @@ Vector4 MakeQuaternion(Vector3 axis, float radian) {
 	if (normal <= 0.0f) return quaternion;
 
 	// 方向ベクトルへ（単位ベクトル：長さは1）
+	//ノルムは１という決まり事
+	//sqrtfはへ平方根
 	normal = 1.0f / sqrtf(normal);
 	axis.x = axis.x * normal;
 	axis.y = axis.y * normal;
@@ -64,24 +67,28 @@ Vector4 CalcQuaternion(Vector4 left, Vector4 right)
 	Vector4 quaternion;
 	float   num1, num2, num3, num4;
 
+	//w
 	num1 = left.w * right.w;
 	num2 = -left.x * right.x;
 	num3 = -left.y * right.y;
 	num4 = -left.z * right.z;
 	quaternion.w = num1 + num2 + num3 + num4;
 
+	//x
 	num1 = left.w * right.x;
 	num2 = left.x * right.w;
 	num3 = left.y * right.z;
 	num4 = -left.z * right.y;
 	quaternion.x = num1 + num2 + num3 + num4;
 
+	//y
 	num1 = left.w * right.y;
 	num2 = left.y * right.w;
 	num3 = left.z * right.x;
 	num4 = -left.x * right.z;
 	quaternion.y = num1 + num2 + num3 + num4;
 
+	//z
 	num1 = left.w * right.z;
 	num2 = left.z * right.w;
 	num3 = left.x * right.y;
@@ -139,7 +146,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	Vector3 cameraPos = { 1,0,0 };  //!< カメラの座標
 	Vector3 cameraUp = { 0,1,0 };   //!< カメラのアップベクトル
-	Vector3 axis = { 0,1,0 };       //!< 回転させる軸
+	Vector3 axis = { 0,1,0 };       //!< 回転させる軸　この場合はｙ軸を回転させる
 	float rad = 90 * 3.14f / 180;   //!< 回転角度
 
 	// ウィンドウの×ボタンが押されるまでループ
@@ -157,6 +164,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		
 		// 横移動
+		//x座標からｙ座標に回転
 		cameraPos = RotateQuaternionPosition(axis, cameraPos, rad);
 
 		// 縦移動
