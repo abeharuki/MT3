@@ -183,6 +183,14 @@ void VectorScreenPrintf(int x, int y, const Vector3& vector, const char* label) 
 	Novice::ScreenPrintf(x + kColumnWidth * 2, y, "%.02f", vector.z);
 	Novice::ScreenPrintf(x + kColumnWidth * 3, y, "%s", label);
 }
+
+void VectorScreenPrintf(int x, int y, const Vector4& vector, const char* label) {
+	Novice::ScreenPrintf(x, y, "%.02f", vector.x);
+	Novice::ScreenPrintf(x + kColumnWidth, y, "%.02f", vector.y);
+	Novice::ScreenPrintf(x + kColumnWidth * 2, y, "%.02f", vector.z);
+	Novice::ScreenPrintf(x + kColumnWidth * 3 ,y, "%.02f", vector.w);
+	Novice::ScreenPrintf(x + kColumnWidth * 4, y, "%s", label);
+}
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -198,6 +206,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 axis = { 0,1,0 };       //!< 回転させる軸　この場合はｙ軸を回転させる
 	float rad = 90 * 3.14f / 180;   //!< 回転角度
 
+	Vector3 a = {5.0f,0.0f,0.0f};
+	Vector4 b = {};
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
 		// フレームの開始
@@ -224,7 +234,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		cameraPos = RotateQuaternionPosition(axis, cameraPos, rad);
 		cameraUp = RotateQuaternionPosition(axis, cameraUp, rad);
 
-
+		b = toQuaternion(a);
 		///
 		/// ↑更新処理ここまで
 		///
@@ -235,6 +245,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		VectorScreenPrintf(0, 0, cameraPos, "cameraPos");
 		VectorScreenPrintf(0, kColumnWidth, cameraUp, "cameraUp");
+		VectorScreenPrintf(0, kColumnWidth*2, b, "b");
 
 		///
 		/// ↑描画処理ここまで
