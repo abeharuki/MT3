@@ -120,7 +120,13 @@ Vector3 RotateQuaternionPosition(Vector3 axis, Vector3 pos, float radius)
 	return resultPosition;
 }
 
-
+static const int kColumnWidth = 60;
+void VectorScreenPrintf(int x, int y, const Vector3& vector, const char* label) {
+	Novice::ScreenPrintf(x, y, "%.02f", vector.x);
+	Novice::ScreenPrintf(x + kColumnWidth, y, "%.02f", vector.y);
+	Novice::ScreenPrintf(x + kColumnWidth * 2, y, "%.02f", vector.z);
+	Novice::ScreenPrintf(x + kColumnWidth * 3, y, "%s", label);
+}
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -169,6 +175,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
+		VectorScreenPrintf(0, 0, cameraPos, "cameraPos");
+		VectorScreenPrintf(0, kColumnWidth, cameraUp, "cameraUp");
 
 		///
 		/// ↑描画処理ここまで
