@@ -21,7 +21,7 @@ struct Matrix4x4 {
 	float m[4][4];
 };
 
-//クォータニオン作成
+//  クォータニオン作成
 //　axis　回転させる軸
 // radian 回転させる角度
 //return  作成したクォータニオン
