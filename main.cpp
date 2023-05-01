@@ -132,6 +132,50 @@ Vector3 RotateQuaternionPosition(Vector3 axis, Vector3 pos, float radius)
 	return resultPosition;
 }
 
+//オイラー角からクォータニオンに変換
+Vector4 toQuaternion(Vector3 euler) {
+	Vector4 quaternion;
+	float   num1, num2, num3, num4,num5,num6;
+
+	//w
+	num1 = cosf(euler.x / 2.0f);
+	num2 = cosf(euler.y / 2.0f);
+	num3 = cosf(euler.z / 2.0f);
+	num4 = sinf(euler.x / 2.0f);
+	num5 = sinf(euler.y / 2.0f);
+	num6 = sinf(euler.z / 2.0f);
+	quaternion.w = num1 * num2 * num3 - num4 * num5 * num6;
+
+	//x
+	num1 = sinf(euler.x / 2.0f);
+	num2 = cosf(euler.y / 2.0f);
+	num3 = cosf(euler.z / 2.0f);
+	num4 = cosf(euler.x / 2.0f);
+	num5 = sinf(euler.y / 2.0f);
+	num6 = sinf(euler.z / 2.0f);
+	quaternion.x = num1 * num2 * num3 + num4 * num5 * num6;
+
+	//y
+	num1 = cosf(euler.x / 2.0f);
+	num2 = sinf(euler.y / 2.0f);
+	num3 = cosf(euler.z / 2.0f);
+	num4 = sinf(euler.x / 2.0f);
+	num5 = cosf(euler.y / 2.0f);
+	num6 = sinf(euler.z / 2.0f);
+	quaternion.y = num1 * num2 * num3 - num4 * num5 * num6;
+
+	//z
+	num1 = cosf(euler.x / 2.0f);
+	num2 = cosf(euler.y / 2.0f);
+	num3 = sinf(euler.z / 2.0f);
+	num4 = sinf(euler.x / 2.0f);
+	num5 = sinf(euler.y / 2.0f);
+	num6 = cosf(euler.z / 2.0f);
+	quaternion.z = num1 * num2 * num3 + num4 * num5 * num6;
+
+	return   quaternion;
+}
+
 static const int kColumnWidth = 60;
 void VectorScreenPrintf(int x, int y, const Vector3& vector, const char* label) {
 	Novice::ScreenPrintf(x, y, "%.02f", vector.x);
