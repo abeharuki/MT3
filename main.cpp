@@ -25,7 +25,7 @@ struct Matrix4x4 {
 // q = w + xi + yj + zk
 //　axis　回転させる軸
 // radian 回転させる角度
-//return  作成したクォータニオン
+//return  回転させる軸と角度を決めてクォータニオンにする
 Vector4 MakeQuaternion(Vector3 axis, float radian) {
 	Vector4 quaternion;
 	float halfSin, halfCos;      //動かす角度の半分のsin,cos
@@ -44,12 +44,10 @@ Vector4 MakeQuaternion(Vector3 axis, float radian) {
 	axis.y = axis.y * normal;
 	axis.z = axis.z * normal;
 
-
+	//四次元ベクトル (λ.x*sinθ/2,λ.y*sinθ/2,λ.z*sinθ/2,cosθ/2)
 	halfSin = sinf(radian * 0.5f);
 	halfCos = cosf(radian * 0.5f);
-
-	//四次元ベクトル (λ.x*sinθ/2,λ.y*sinθ/2,λ.z*sinθ/2,cosθ/2)
- 
+	
 	quaternion.w = halfCos;
 	quaternion.x = axis.x * halfSin;
 	quaternion.y = axis.y * halfSin;
@@ -105,18 +103,20 @@ Vector4 CalcQuaternion(Vector4 left, Vector4 right)
 // return  回転後の座標
 Vector3 RotateQuaternionPosition(Vector3 axis, Vector3 pos, float radius)
 {
-	Vector4  complexNumber, complexConjugateNumber;
+	Vector4 complexNumber, complexConjugateNumber;
 	Vector4 posQuaternion = { 0, pos.x, pos.y, pos.z };
-	Vector3     resultPosition;
+	Vector3 resultPosition;
 
 	if (axis.x == 0 && axis.y == 0 && axis.z == 0 ||
 		radius == 0) {
 		return pos;
 	}
 
+	//クォータニオンの作成
 	complexNumber = MakeQuaternion(axis, radius);
 	complexConjugateNumber = MakeQuaternion(axis, -radius);
 
+	//クォータニオンの積
 	posQuaternion = CalcQuaternion(complexNumber, posQuaternion);
 	posQuaternion = CalcQuaternion(posQuaternion, complexConjugateNumber);
 
@@ -162,9 +162,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
+		//MT3_04で学んだのはオイラー角を回転行列に変換の仕方
 		
 		// 横移動
-		//x座標からｙ座標に回転
+		//x座標をrad回転
 		cameraPos = RotateQuaternionPosition(axis, cameraPos, rad);
 
 		// 縦移動
