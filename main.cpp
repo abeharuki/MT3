@@ -33,6 +33,7 @@ Vector4 MakeQuaternion(Vector3 axis, float radian) {
 
 	quaternion = { 0,0,0,0 };
 	// 回転軸の長さを求める
+	//λ2x+λ2y+λ2z=1
 	normal = axis.x * axis.x + axis.y * axis.y + axis.z * axis.z;
 	if (normal <= 0.0f) return quaternion;
 
@@ -60,6 +61,8 @@ Vector4 MakeQuaternion(Vector3 axis, float radian) {
 // left   計算の左の項
 // right  計算の右の項
 // return 計算したクォータニオン
+//掛け算したクォータニオンは、それ自体 1 つの回転
+//つまり(q1*q2)はq1で回転した後にq2さらに回転した結果になる
 Vector4 CalcQuaternion(Vector4 left, Vector4 right)
 {
 	Vector4 quaternion;
@@ -112,8 +115,10 @@ Vector3 RotateQuaternionPosition(Vector3 axis, Vector3 pos, float radius)
 		return pos;
 	}
 
+	//右手系と左手系
 	//クォータニオンの作成
 	complexNumber = MakeQuaternion(axis, radius);
+	//逆回転のクォータニオン
 	complexConjugateNumber = MakeQuaternion(axis, -radius);
 
 	//クォータニオンの積
