@@ -26,6 +26,9 @@ struct Matrix4x4 {
 //　axis　回転させる軸
 // radian 回転させる角度
 //return  回転させる軸と角度を決めてクォータニオンにする
+// オイラー角の実数が入ってるとこを1,実数の値はradianに入れる
+// (例：オイラー角が{5,0,0}だったら　axis{1,0,0} radian 5)
+//マウスで視点移動する場合はradianにマウスの移動量を入れる(多分!)
 Vector4 MakeQuaternion(Vector3 axis, float radian) {
 	Vector4 quaternion;
 	float halfSin, halfCos;      //動かす角度の半分のsin,cos
@@ -39,7 +42,7 @@ Vector4 MakeQuaternion(Vector3 axis, float radian) {
 
 	// 方向ベクトルへ（単位ベクトル：長さは1）
 	//ノルムは１という決まり事
-	//sqrtfはへ平方根
+	//sqrtfは平方根
 	normal = 1.0f / sqrtf(normal);
 	axis.x = axis.x * normal;
 	axis.y = axis.y * normal;
@@ -104,6 +107,7 @@ Vector4 CalcQuaternion(Vector4 left, Vector4 right)
 // pos     回転させるオブジェクトの座標
 // radius  回転させる角度
 // return  回転後の座標
+//わからないけどオイラー角をクォータニオンに変換それを回転行列に変換してるかも
 Vector3 RotateQuaternionPosition(Vector3 axis, Vector3 pos, float radius)
 {
 	Vector4 complexNumber, complexConjugateNumber;
@@ -132,7 +136,7 @@ Vector3 RotateQuaternionPosition(Vector3 axis, Vector3 pos, float radius)
 	return resultPosition;
 }
 
-//オイラー角からクォータニオンに変換
+//オイラー角からクォータニオンに変換だけ
 Vector4 toQuaternion(Vector3 euler) {
 	Vector4 quaternion;
 	float   num1, num2, num3, num4,num5,num6;
@@ -206,8 +210,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 axis = { 0,1,0 };       //!< 回転させる軸　この場合はｙ軸を回転させる
 	float rad = 90 * 3.14f / 180;   //!< 回転角度
 
+	//
 	Vector3 a = {5.0f,0.0f,0.0f};
 	Vector4 b = {};
+
+	Vector3 c = { 1.0f,0.0f,0.0f };
+	Vector4 d = {};
+
+	
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
 		// フレームの開始
@@ -223,9 +233,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		//MT3_04で学んだのはオイラー角を回転行列に変換の仕方
 		
-		// 横移動
+		// 横移動 axis{0,1,0}で横
 		//x座標をrad回転
 		cameraPos = RotateQuaternionPosition(axis, cameraPos, rad);
+		
 
 		// 縦移動
 		axis.x = cameraPos.y * cameraUp.z - cameraPos.z * cameraUp.y;
@@ -234,7 +245,41 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		cameraPos = RotateQuaternionPosition(axis, cameraPos, rad);
 		cameraUp = RotateQuaternionPosition(axis, cameraUp, rad);
 
-		b = toQuaternion(a);
+		//同じ値になる
+		b = toQuaternion(a); //a{5,0,0}
+		d = MakeQuaternion(c, 5.0f);
+	
+
+		/*--------------------------------------------------------------
+		
+		//マウスで視点移動するときのコード(試し書き)
+
+		Vector3 xRot = {};
+		Vector3 yRot = {};
+
+		Vector3 axis1 = {};
+		Vector3 axis2 = {};
+
+		float cameraRotaSpeed = 3.0f; ←カメラの回転速度
+
+		//マウスの移動量
+		xRot.y += GetmousePosX * cameraRoteSpeed;  axis1 = {0,1,0};
+		yRot.x -= GetmousePosY * cameraRoteSpeed;  axis2 = {1,0,0};
+		
+		//オイラー角をクォータニオンに変換
+		//縦向きの回転
+		Vector4 Euler1 = toQuaternion(yRot);　= MakeQuaternion(axis2,yRot.x);
+		//横向きの回転
+		Vector4 Euler2 = toQuaternion(xRot);  = MakeQuaternion(axis1,xRot.y);
+		
+		//クォータニオンの掛け算
+		Vector4 comeraRot = CalcQuaternion (Euler1,Euler2);
+
+		この後にcomeraRotを回転行列に変換→ワールド変換→ビュー変換→射影変換で一人称視点の完成？
+		
+		----------------------------------------------------------------*/
+
+
 		///
 		/// ↑更新処理ここまで
 		///
@@ -243,7 +288,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		VectorScreenPrintf(0, 0, cameraPos, "cameraPos");
+		VectorScreenPrintf(0, 0, b, "cameraPos");
 		VectorScreenPrintf(0, kColumnWidth, cameraUp, "cameraUp");
 		VectorScreenPrintf(0, kColumnWidth*2, b, "b");
 
