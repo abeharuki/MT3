@@ -2,9 +2,17 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <assert.h>
+#include <atlsimpstr.h>
+
 
 
 const char kWindowTitle[] = "学籍番号";
+
+struct Vector2 final {
+	float x;
+	float y;
+};
+
 
 struct Vector3 {
 	float x, y, z;
@@ -36,7 +44,7 @@ Vector4 MakeQuaternion(Vector3 axis, float radian) {
 
 	quaternion = { 0,0,0,0 };
 	// 回転軸の長さを求める
-	//λ2x+λ2y+λ2z=1
+	//λ2x+λ2y+λ2z=1方向が重要だからノルムを１に統一
 	normal = axis.x * axis.x + axis.y * axis.y + axis.z * axis.z;
 	if (normal <= 0.0f) return quaternion;
 
@@ -101,6 +109,8 @@ Vector4 CalcQuaternion(Vector4 left, Vector4 right)
 
 	return   quaternion;
 }
+
+
 
 //クォータニオンによる回転
 // axis    回転させたい軸
@@ -179,6 +189,31 @@ Vector4 toQuaternion(Vector3 euler) {
 
 	return   quaternion;
 }
+//クォータニオンから回転行列に変換
+Matrix4x4 QuaternionMatrix(Vector4 quaternion) {
+	Matrix4x4 result;
+	result.m[0][0] = 2 * (quaternion.w * quaternion.w) + 2 * (quaternion.x * quaternion.x) - 1;
+	result.m[0][1] = 2 * (quaternion.x * quaternion.y) - 2 * (quaternion.z * quaternion.w);
+	result.m[0][2] = 2 * (quaternion.x * quaternion.z) + 2 * (quaternion.y * quaternion.w);
+	result.m[0][3] = 0;
+
+	result.m[1][0] = 2 * (quaternion.x * quaternion.y) + 2 * (quaternion.z * quaternion.w);
+	result.m[1][1] = 2 * (quaternion.w * quaternion.w) + 2 * (quaternion.y * quaternion.y) - 1;
+	result.m[1][2] = 2 * (quaternion.y * quaternion.z) - 2 * (quaternion.x * quaternion.w);
+	result.m[1][3] = 0;
+
+	result.m[2][0] = 2 * (quaternion.x * quaternion.z) + 2 * (quaternion.y * quaternion.w);
+	result.m[2][1] = 2 * (quaternion.y * quaternion.z) + 2 * (quaternion.x * quaternion.w);
+	result.m[2][2] = 2 * (quaternion.w * quaternion.w) + 2 * (quaternion.z * quaternion.z) - 1;
+	result.m[2][3] = 0;
+
+	result.m[3][0] = 0;
+	result.m[3][1] = 0;
+	result.m[3][2] = 0;
+	result.m[3][3] = 1;
+
+	return result;
+}
 
 static const int kColumnWidth = 60;
 void VectorScreenPrintf(int x, int y, const Vector3& vector, const char* label) {
@@ -205,19 +240,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
 
-	Vector3 cameraPos = { 1,0,0 };  //!< カメラの座標
+	Vector3 cameraPos = { 0,0,0 };  //!< カメラの座標
 	Vector3 cameraUp = { 0,1,0 };   //!< カメラのアップベクトル
 	Vector3 axis = { 0,1,0 };       //!< 回転させる軸　この場合はｙ軸を回転させる
-	float rad = 90 * 3.14f / 180;   //!< 回転角度
-
+	float rad = 90 * 3.14f / 180;   //!< 回転角度(90度の回転）
+	
+	Vector3 cameraPos2 = { 1,0,0 };
+	Vector3 axis2 = {0,1,0};
 	//
-	Vector3 a = {5.0f,0.0f,0.0f};
+	Vector3 a = {0.0f,1.0f,0.0f};
 	Vector4 b = {};
 
 	Vector3 c = { 1.0f,0.0f,0.0f };
 	Vector4 d = {};
 
-	
+	Vector4 e = {};
+	Vector4 f = {};
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
 		// フレームの開始
@@ -231,8 +269,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
+	 
 		//MT3_04で学んだのはオイラー角を回転行列に変換の仕方
 		
+		
+
 		// 横移動 axis{0,1,0}で横
 		//x座標をrad回転
 		cameraPos = RotateQuaternionPosition(axis, cameraPos, rad);
@@ -242,13 +283,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		axis.x = cameraPos.y * cameraUp.z - cameraPos.z * cameraUp.y;
 		axis.y = cameraPos.z * cameraUp.x - cameraPos.x * cameraUp.z;
 		axis.z = cameraPos.x * cameraUp.y - cameraPos.y * cameraUp.x;
-		cameraPos = RotateQuaternionPosition(axis, cameraPos, rad);
+		cameraPos2 = RotateQuaternionPosition(axis, cameraPos, rad);
 		cameraUp = RotateQuaternionPosition(axis, cameraUp, rad);
 
 		//同じ値になる
-		b = toQuaternion(a); //a{5,0,0}
-		d = MakeQuaternion(c, 5.0f);
+		b = MakeQuaternion(a,rad); //a{5,0,0}
+		d = MakeQuaternion(c, rad);
 	
+		e = CalcQuaternion(b, d);
 
 		/*--------------------------------------------------------------
 		
@@ -262,9 +304,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		float cameraRotaSpeed = 3.0f; ←カメラの回転速度
 
+		Vector2 Radian = {};
+
 		//マウスの移動量
-		xRot.y += GetmousePosX * cameraRoteSpeed;  axis1 = {0,1,0};
-		yRot.x -= GetmousePosY * cameraRoteSpeed;  axis2 = {1,0,0};
+		//度数法からラジアンに変換
+		Radian.x = GetMousePosX * cameraRoteSpeed * M_PI/180
+		Radian.Y = GetMousePosY * cameraRoteSpeed * M_PI/180
+
+		//角度の変更
+		xRot.y += Radian.x ;  axis1 = {0,1,0};
+		yRot.x -= Radian.y ;  axis2 = {1,0,0};
 		
 		//オイラー角をクォータニオンに変換
 		//縦向きの回転
@@ -288,10 +337,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		VectorScreenPrintf(0, 0, b, "cameraPos");
-		VectorScreenPrintf(0, kColumnWidth, cameraUp, "cameraUp");
-		VectorScreenPrintf(0, kColumnWidth*2, b, "b");
+		VectorScreenPrintf(0, 0, b, "b");
+		VectorScreenPrintf(0, kColumnWidth, d, "d");
+		VectorScreenPrintf(0, kColumnWidth*2, e, "e");
+		Novice::ScreenPrintf(0, kColumnWidth * 3,"%f", rad);
 
+
+		VectorScreenPrintf(0, kColumnWidth * 4, cameraPos, "b");
+		VectorScreenPrintf(0, kColumnWidth*5, cameraPos2, "d");
+		VectorScreenPrintf(0, kColumnWidth * 6, e, "e");
 		///
 		/// ↑描画処理ここまで
 		///
