@@ -214,7 +214,23 @@ Matrix4x4 QuaternionMatrix(Vector4 quaternion) {
 
 	return result;
 }
-
+//クォータニオンからオイラー角に変換
+Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
+	Vector3 result;
+	result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0] +
+		1.0f * matrix.m[3][0];
+	result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1] +
+		1.0f * matrix.m[3][1];
+	result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2] +
+		1.0f * matrix.m[3][2];
+	float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] +
+		1.0f * matrix.m[3][3];
+	assert(w != 0.0f);
+	result.x /= w;
+	result.y /= w;
+	result.z /= w;
+	return result;
+};
 static const int kColumnWidth = 60;
 void VectorScreenPrintf(int x, int y, const Vector3& vector, const char* label) {
 	Novice::ScreenPrintf(x, y, "%.02f", vector.x);
@@ -251,11 +267,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 a = {0.0f,1.0f,0.0f};
 	Vector4 b = {};
 
-	Vector3 c = { 1.0f,0.0f,0.0f };
+	Vector3 c = { 0.0f,0.0f,0.0f };
 	Vector4 d = {};
 
-	Vector4 e = {};
-	Vector4 f = {};
+	
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
 		// フレームの開始
@@ -288,9 +303,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		//同じ値になる
 		b = MakeQuaternion(a,rad); //a{5,0,0}
-		d = MakeQuaternion(c, rad);
+		Matrix4x4 rotationMatrix = QuaternionMatrix(b);
 	
-		e = CalcQuaternion(b, d);
+		Vector3 e =  Transform({0,0,0}, rotationMatrix);
 
 		/*--------------------------------------------------------------
 		
