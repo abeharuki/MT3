@@ -247,6 +247,16 @@ Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Ve
 
 }
 
+//クロス積
+Vector3 Cross(const Vector3& v1, const Vector3& v2) {
+	Vector3 Cross;
+	Cross.x = v1.y * v2.z - v1.z * v2.y;
+	Cross.y = v1.z * v2.x - v1.x * v2.z;
+	Cross.z = v1.x * v2.y - v1.y * v2.x;
+
+	return Cross;
+}
+
 static const int kRowHeight = 20;
 static const int kColumnWidth = 60;
 
@@ -263,11 +273,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
+	Vector3 v1{ 1.2f,-3.9f,2.5f };
+	Vector3 v2{ 2.8f,0.4f,-1.3f };
+
 
 	Vector3 rotate{};
 	Vector3 translate{};
-	Vector3 cameraPosition{};
-	Vector3 kLocaVertices[3] = {};
+	Vector3 cameraPosition{0,0,50.0f};
+	Vector3 kLocaVertices[3]{
+		{ 640, 30, 0 },
+		{ 320,500,0 },
+		{ 960,500,0 }
+	};
+	
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -281,6 +299,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		/// ↓更新処理ここから
 		///
+
+		Vector3 cross = Cross(v1, v2);
+
 
 		//
 
@@ -319,6 +340,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			int(screenVertices[0].x), int(screenVertices[0].x), int(screenVertices[1].x), int(screenVertices[1].y),
 			int(screenVertices[2].x), int(screenVertices[2].y), RED, kFillModeSolid
 		);
+
+		
 
 		///
 		/// ↑描画処理ここまで
