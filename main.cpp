@@ -7,6 +7,10 @@
 
 const char kWindowTitle[] = "学籍番号";
 
+struct Vector2 {
+	float x, y;
+};
+
 struct Vector3 {
 	float x, y, z;
 };
@@ -264,6 +268,26 @@ static const int kWindowWidtht = 1280;
 static const int kWindowHeight = 720;
 
 
+void VectorScreenPrintf(int x, int y, const Vector3& vector, const char* label) {
+	Novice::ScreenPrintf(x, y, "%.02f", vector.x);
+	Novice::ScreenPrintf(x + kColumnWidth, y, "%.02f", vector.y);
+	Novice::ScreenPrintf(x + kColumnWidth * 2, y, "%.02f", vector.z);
+	Novice::ScreenPrintf(x + kColumnWidth * 3, y, "%s", label);
+}
+
+void MatrixScreenPrintf(int x, int y, const  Matrix4x4& matrix, const char* label) {
+	Novice::ScreenPrintf(x, y, "%s\n", label);
+	for (int row = 0; row < 4; ++row) {
+		for (int column = 0; column < 4; ++column) {
+
+			Novice::ScreenPrintf(
+				x + column * kColumnWidth, y + row * kRowHeight + 20, "%6.02f", matrix.m[row][column]
+			);
+
+		}
+	}
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -277,13 +301,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 v2{ 2.8f,0.4f,-1.3f };
 
 
-	Vector3 rotate{};
-	Vector3 translate{};
-	Vector3 cameraPosition{0,0,50.0f};
+	Vector3 rotate{0,0,0};
+	Vector3 translate{0,0,0};
+	Vector2 velo = { 0.01f,0.01f };
+	Vector3 cameraPosition{ 0.0f,0.0f,-1.0f};
 	Vector3 kLocaVertices[3]{
-		{ 640, 30, 0 },
-		{ 320,500,0 },
-		{ 960,500,0 }
+		{0.0f,0.1f,0 },
+		{ 0.1f, 0.0f, 0 },
+		{ -0.1f,0.0f,0 }
 	};
 	
 
@@ -302,6 +327,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		Vector3 cross = Cross(v1, v2);
 
+		if (keys[DIK_W]) {
+			translate.z += velo.y;
+		}
+		else if(keys[DIK_S]) {
+			translate.z -= velo.y;
+		}
+
+		if (keys[DIK_A]) {
+			translate.x -= velo.x;
+		}
+		else if (keys[DIK_D]) {
+			translate.x += velo.x;
+		}
+
+
+		if (keys[DIK_RIGHTARROW]) {
+			rotate.y += 3.14f/180.0f;
+		}
+		else if (keys[DIK_LEFTARROW]) {
+			rotate.y -= 3.14f / 180.0f;
+		}
 
 		//
 
@@ -337,12 +383,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		Novice::DrawTriangle(
-			int(screenVertices[0].x), int(screenVertices[0].x), int(screenVertices[1].x), int(screenVertices[1].y),
+			int(screenVertices[0].x), int(screenVertices[0].y), int(screenVertices[1].x), int(screenVertices[1].y),
 			int(screenVertices[2].x), int(screenVertices[2].y), RED, kFillModeSolid
 		);
 
 		
-
 		///
 		/// ↑描画処理ここまで
 		///
