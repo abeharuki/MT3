@@ -3,7 +3,7 @@
 #include <cmath>
 #include <math.h>
 #include <assert.h>
-
+#include <imgui.h>
 
 const char kWindowTitle[] = "学籍番号";
 
@@ -17,6 +17,13 @@ struct Vector3 {
 
 struct Matrix4x4 {
 	float m[4][4];
+};
+
+struct Sphere
+{
+	Vector3 center;//中心点
+	float radius;//半径
+
 };
 
 //透視投影行列
@@ -261,6 +268,98 @@ Vector3 Cross(const Vector3& v1, const Vector3& v2) {
 	return Cross;
 }
 
+
+void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix) {
+	const float kGridHalfWidth = 2.0f;//Gridの半分の幅
+	const uint32_t kSubdivision = 10;//分割数
+	const float kGridEvery = (kGridHalfWidth * 2.0f) / float(kSubdivision);//1つ分の長さ
+	Vector3 startLine[11];
+	Vector3 endLine[11];
+	Vector3 ndcVertex1[11];
+	Vector3 ndcVertex2[11];
+	Vector3 screenVertices1[11];
+	Vector3 screenVertices2[11];
+	//奥から手前の線を順々に引いていく
+	for (uint32_t xIndex = 0; xIndex <= kSubdivision; ++xIndex) {
+		startLine[xIndex] = { xIndex* kGridEvery ,0,0 };
+		endLine[xIndex] = {xIndex* kGridEvery     ,0,   kGridEvery* kSubdivision };
+		//正規化デバイス座標系
+		ndcVertex1[xIndex] = Transform(startLine[xIndex], viewProjectionMatrix);
+		ndcVertex2[xIndex] = Transform(endLine[xIndex], viewProjectionMatrix);
+		//スクリーン座標系
+		screenVertices1[xIndex] = Transform(ndcVertex1[xIndex], viewportMatrix);
+		screenVertices2[xIndex] = Transform(ndcVertex2[xIndex], viewportMatrix);
+		Novice::DrawLine(int(screenVertices1[xIndex].x), int(screenVertices1[xIndex].y),
+			int(screenVertices2[xIndex].x), int(screenVertices2[xIndex].y),
+		0xAAAAAAFF);
+	}
+
+
+	for (uint32_t zIndex = 0; zIndex <= kSubdivision; ++zIndex) {
+		startLine[zIndex] = { 0,0,zIndex *kGridEvery };
+		endLine[zIndex] = { kGridEvery * kSubdivision     ,0,      zIndex * kGridEvery };
+		//正規化デバイス座標系
+		ndcVertex1[zIndex] = Transform(startLine[zIndex], viewProjectionMatrix);
+		ndcVertex2[zIndex] = Transform(endLine[zIndex], viewProjectionMatrix);
+		//スクリーン座標系
+		screenVertices1[zIndex] = Transform(ndcVertex1[zIndex], viewportMatrix);
+		screenVertices2[zIndex] = Transform(ndcVertex2[zIndex], viewportMatrix);
+		Novice::DrawLine(int(screenVertices1[zIndex].x), int(screenVertices1[zIndex].y),
+			int(screenVertices2[zIndex].x), int(screenVertices2[zIndex].y),
+			0xAAAAAAFF);
+	}
+
+	
+}
+
+void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+	const uint32_t kSubdivision = 10;//分割数
+	const float pi = 3.14f;//π
+	const float kLonEvery = 2*pi / kSubdivision;//経度分割1つ分の角度(φd)
+	const float kLatEvery = pi / kSubdivision;//緯度分割1つ分の角度(θd)
+	
+	//緯度の方向に分割-π/2~π/2
+	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+		float lat = -pi / 2.0f + kLatEvery * latIndex;//現在の緯度(θ)
+		//経度の方向に分割
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+			float lon = lonIndex * kLonEvery;//現在の経度(φ)
+			Vector3 a, b, c;
+			a = { std::cos(lat) * std::cos(lon) + sphere.center.x,
+				  std::sin(lat) + sphere.center.x,
+				  std::cos(lat) * std::sin(lon) + sphere.center.x };
+
+			b = { std::cos(lat+ kLatEvery) * std::cos(lon) + sphere.center.x,
+				  std::sin(lat + kLatEvery) + sphere.center.y,
+				  std::cos(lat + kLatEvery) * std::sin(lon) + sphere.center.z };
+
+			c = { std::cos(lat) * std::cos(lon+ kLonEvery) + sphere.center.x,
+				  std::sin(lat) + sphere.center.y,
+				  std::cos(lat) * std::sin(lon+ kLonEvery) + sphere.center.z };
+
+			//正規化デバイス座標系
+			Vector3 ndcVertexA = Transform(a, viewProjectionMatrix);
+			Vector3 ndcVertexB = Transform(b, viewProjectionMatrix);
+			Vector3 ndcVertexC = Transform(c, viewProjectionMatrix);
+			//スクリーン座標系
+			Vector3 screenVerticesA = Transform(ndcVertexA, viewportMatrix);
+			Vector3 screenVerticesB = Transform(ndcVertexB, viewportMatrix);
+			Vector3 screenVerticesC = Transform(ndcVertexC, viewportMatrix);
+
+			//ab
+			Novice::DrawLine(int(screenVerticesA.x), int(screenVerticesA.y),
+				int(screenVerticesB.x), int(screenVerticesB.y),
+				color);
+			//bc
+			Novice::DrawLine(int(screenVerticesB.x), int(screenVerticesB.y),
+				int(screenVerticesC.x), int(screenVerticesC.y),
+				color);
+
+		}
+	}
+
+}
+
 static const int kRowHeight = 20;
 static const int kColumnWidth = 60;
 
@@ -297,20 +396,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
-	Vector3 v1{ 1.2f,-3.9f,2.5f };
-	Vector3 v2{ 2.8f,0.4f,-1.3f };
-
+	 
+	Sphere sphere = {
+		{ 2.0f,0.0f,0.0f },
+		2
+	};
+	int color = BLACK;
 
 	Vector3 rotate{0,0,0};
 	Vector3 translate{0,0,0};
-	Vector2 velo = { 0.01f,0.01f };
-	Vector3 cameraPosition{ 0.0f,0.0f,-1.0f};
-	Vector3 kLocaVertices[3]{
-		{0.0f,0.1f,0 },
-		{ 0.1f, 0.0f, 0 },
-		{ -0.1f,0.0f,0 }
-	};
-	
+	Vector3 cameraTranslate{ 2.0f,1.9f,-5.49f };
+	Vector3 cameraRotate{ 0.26f,0.0f,0.0f };
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -325,54 +421,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Vector3 cross = Cross(v1, v2);
 
-		if (keys[DIK_W]) {
-			translate.z += velo.y;
-		}
-		else if(keys[DIK_S]) {
-			translate.z -= velo.y;
-		}
-
-		if (keys[DIK_A]) {
-			translate.x -= velo.x;
-		}
-		else if (keys[DIK_D]) {
-			translate.x += velo.x;
-		}
-
-
-		if (keys[DIK_RIGHTARROW]) {
-			rotate.y += 3.14f/180.0f;
-		}
-		else if (keys[DIK_LEFTARROW]) {
-			rotate.y -= 3.14f / 180.0f;
-		}
-
-		//
 
 		//各行列の計算
 		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
 
-		Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f },{0.0f,0.0f,0.0f}, cameraPosition);
+		Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, cameraRotate, cameraTranslate);
 		Matrix4x4 viewMatrix = Inverse(cameraMatrix);
 
 		Matrix4x4 projecttionMatrix = MakePerspectiverFovMatrix(0.45f, float(kWindowWidtht) / float(kWindowHeight), 0.1f, 100.0f);
-		//WVPMatrixを作る。同次クリップ空間
-		Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projecttionMatrix));
+		//VPMatrixを作る。同次クリップ空間
+		Matrix4x4 viewProjectionMatrix = Multiply(viewMatrix, projecttionMatrix);
 		//ViewportMatrixを作る
 		Matrix4x4 viewportMatrix = MakeViewportMatrix(0, 0, float(kWindowWidtht), float(kWindowHeight), 0.0f, 1.0f);
-		//Screen空間と頂点を変換する
-		Vector3 screenVertices[3];
-		for (uint32_t i = 0; i < 3; ++i) {
-			//正規化デバイス座標系
-			Vector3 ndcVertex = Transform(kLocaVertices[i], worldViewProjectionMatrix);
-			//スクリーン座標系
-			screenVertices[i] = Transform(ndcVertex, viewportMatrix);
-		}
-
-
 		
+		ImGui::Begin("Window");
+		ImGui::DragFloat3("CamerTranslate", &cameraTranslate.x, 0.01f);
+		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
+		ImGui::DragFloat3("SphereCenter", &sphere.center.x, 0.01f);
+		ImGui::DragFloat("SphereRadius", &sphere.radius, 0.01f);
+		ImGui::End();
 
 		///
 		/// ↑更新処理ここまで
@@ -382,12 +450,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		Novice::DrawTriangle(
-			int(screenVertices[0].x), int(screenVertices[0].y), int(screenVertices[1].x), int(screenVertices[1].y),
-			int(screenVertices[2].x), int(screenVertices[2].y), RED, kFillModeSolid
-		);
+		DrawGrid(viewProjectionMatrix, viewportMatrix);
+		DrawSphere(sphere, viewProjectionMatrix, viewportMatrix, color);
 
-		
 		///
 		/// ↑描画処理ここまで
 		///
