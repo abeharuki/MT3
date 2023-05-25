@@ -326,8 +326,8 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 			float lon = lonIndex * kLonEvery;//現在の経度(φ)
 			Vector3 a, b, c;
 			a = { std::cos(lat) * std::cos(lon) + sphere.center.x,
-				  std::sin(lat) + sphere.center.x,
-				  std::cos(lat) * std::sin(lon) + sphere.center.x };
+				  std::sin(lat) + sphere.center.y,
+				  std::cos(lat) * std::sin(lon) + sphere.center.z };
 
 			b = { std::cos(lat+ kLatEvery) * std::cos(lon) + sphere.center.x,
 				  std::sin(lat + kLatEvery) + sphere.center.y,
