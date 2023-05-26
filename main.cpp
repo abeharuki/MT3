@@ -26,6 +26,49 @@ struct Sphere
 
 };
 
+struct Line {
+	Vector3 origin; //始点
+	Vector3 deff; //終点への差分ベクトル
+};
+
+struct Ray {
+	Vector3 origin; //始点
+	Vector3 deff; //終点への差分ベクトル
+};
+
+struct Segment {
+	Vector3 origin; //始点
+	Vector3 deff; //終点への差分ベクトル
+
+};
+
+//加算
+Vector3 Add(const Vector3& v1, const Vector3& v2) {
+	Vector3 add;
+	add.x = v1.x + v2.x;
+	add.y = v1.y + v2.y;
+	add.z = v1.z + v2.z;
+	return add;
+};
+
+//減算
+Vector3 Subract(const Vector3& v1, const Vector3& v2) {
+	Vector3 subract;
+	subract.x = v1.x - v2.x;
+	subract.y = v1.y - v2.y;
+	subract.z = v1.z - v2.z;
+	return subract;
+};
+
+//スカラー倍
+Vector3 Multiply(float scalar, const Vector3& v) {
+	Vector3 multiply;
+	multiply.x = v.x * scalar;
+	multiply.y = v.y * scalar;
+	multiply.z = v.z * scalar;
+	return  multiply;
+};
+
 //透視投影行列
 Matrix4x4 MakePerspectiverFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
 	Matrix4x4  MakePerspectiverFovMatrix;
@@ -268,6 +311,18 @@ Vector3 Cross(const Vector3& v1, const Vector3& v2) {
 	return Cross;
 }
 
+//長さ(ノルマ)
+float Length(const Vector3& v) {
+	float length = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+	return length;
+};
+
+//内積
+float Dot(const Vector3& v1, const Vector3& v2) {
+	float dot;
+	dot = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+	return dot;
+};
 
 void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix) {
 	const float kGridHalfWidth = 2.0f;//Gridの半分の幅
@@ -360,6 +415,26 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 
 }
 
+Vector3 Project(const Vector3& v1, const Vector3& v2) {
+	float b = Length(v2);
+	float t = (Dot(v1, v2) / (b * b));
+	Vector3 project;
+	project = Multiply(t, v2);
+
+	return project;
+};
+
+Vector3 ClosestPoint(const Vector3& point, const Segment& segment) {
+	Vector3 a = Subract(point, segment.origin);
+	float b = Length(segment.deff);
+	float t = (Dot(a, segment.deff) / (b * b));
+	Vector3 tb = Multiply(t, segment.deff);
+	Vector3 closesPoint;
+	closesPoint = Add(segment.origin, tb);
+
+	return closesPoint;
+};
+
 static const int kRowHeight = 20;
 static const int kColumnWidth = 60;
 
@@ -396,17 +471,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
-	 
-	Sphere sphere = {
-		{ 2.0f,0.0f,0.0f },
-		2
-	};
-	int color = BLACK;
+	
 
 	Vector3 rotate{0,0,0};
 	Vector3 translate{0,0,0};
-	Vector3 cameraTranslate{ 2.0f,1.9f,-5.49f };
+	Vector3 cameraTranslate{ 0.0f,1.9f,-5.49f };
 	Vector3 cameraRotate{ 0.26f,0.0f,0.0f };
+
+	Segment segment{ {-2.0f,-1.0f,0.0f},{3.0f,2.0f,2.0f} };
+	Vector3 point{ -1.5f,0.6f,0.6f };
+
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -421,8 +495,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-
-
+		
 		//各行列の計算
 		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
 
@@ -435,11 +508,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		//ViewportMatrixを作る
 		Matrix4x4 viewportMatrix = MakeViewportMatrix(0, 0, float(kWindowWidtht), float(kWindowHeight), 0.0f, 1.0f);
 		
+
+		Vector3 project = Project(Subract(point, segment.origin), segment.deff);
+		Vector3 closesPoint = ClosestPoint(point, segment);
+
+
+
 		ImGui::Begin("Window");
 		ImGui::DragFloat3("CamerTranslate", &cameraTranslate.x, 0.01f);
 		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("SphereCenter", &sphere.center.x, 0.01f);
-		ImGui::DragFloat("SphereRadius", &sphere.radius, 0.01f);
+		
 		ImGui::End();
 
 		///
@@ -450,9 +528,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		DrawGrid(viewProjectionMatrix, viewportMatrix);
-		DrawSphere(sphere, viewProjectionMatrix, viewportMatrix, color);
+		Sphere pointSphere{ point,0.01f };
+		Sphere closestPointSphere{ closesPoint,0.01f };
 
+		DrawSphere(pointSphere, viewProjectionMatrix, viewportMatrix, RED);
+		DrawSphere(closestPointSphere, viewProjectionMatrix, viewportMatrix, BLACK);
+
+		Vector3 start = Transform(Transform(segment.origin, viewProjectionMatrix), viewportMatrix);
+		Vector3 end = Transform(Transform(Add(segment.origin,segment.deff),viewProjectionMatrix), viewportMatrix);
+
+		Novice::DrawLine(int(start.x), int(start.y), int(end.x), int(end.y), WHITE);
+		DrawGrid(viewProjectionMatrix, viewportMatrix);
 		///
 		/// ↑描画処理ここまで
 		///
