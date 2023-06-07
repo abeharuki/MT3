@@ -324,6 +324,7 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 	return dot;
 };
 
+
 void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix) {
 	const float kGridHalfWidth = 2.0f;//Gridの半分の幅
 	const uint32_t kSubdivision = 10;//分割数
@@ -334,45 +335,59 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 	Vector3 ndcVertex2[11];
 	Vector3 screenVertices1[11];
 	Vector3 screenVertices2[11];
+	int color;
 	//奥から手前の線を順々に引いていく
 	for (uint32_t xIndex = 0; xIndex <= kSubdivision; ++xIndex) {
-		startLine[xIndex] = { xIndex* kGridEvery ,0,0 };
-		endLine[xIndex] = {xIndex* kGridEvery     ,0,   kGridEvery* kSubdivision };
+		startLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth ,0,0 };
+		endLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth    ,0,   kGridEvery * kSubdivision };
 		//正規化デバイス座標系
 		ndcVertex1[xIndex] = Transform(startLine[xIndex], viewProjectionMatrix);
 		ndcVertex2[xIndex] = Transform(endLine[xIndex], viewProjectionMatrix);
 		//スクリーン座標系
 		screenVertices1[xIndex] = Transform(ndcVertex1[xIndex], viewportMatrix);
 		screenVertices2[xIndex] = Transform(ndcVertex2[xIndex], viewportMatrix);
+		if (xIndex == 5) {
+			color = BLACK;
+		}
+		else {
+			color = 0xAAAAAAFF;
+		}
 		Novice::DrawLine(int(screenVertices1[xIndex].x), int(screenVertices1[xIndex].y),
 			int(screenVertices2[xIndex].x), int(screenVertices2[xIndex].y),
-		0xAAAAAAFF);
+			color);
 	}
 
 
 	for (uint32_t zIndex = 0; zIndex <= kSubdivision; ++zIndex) {
-		startLine[zIndex] = { 0,0,zIndex *kGridEvery };
-		endLine[zIndex] = { kGridEvery * kSubdivision     ,0,      zIndex * kGridEvery };
+		startLine[zIndex] = { -kGridHalfWidth,0,zIndex * kGridEvery };
+		endLine[zIndex] = { (kGridEvery * kSubdivision) - kGridHalfWidth     ,0,      zIndex * kGridEvery };
 		//正規化デバイス座標系
 		ndcVertex1[zIndex] = Transform(startLine[zIndex], viewProjectionMatrix);
 		ndcVertex2[zIndex] = Transform(endLine[zIndex], viewProjectionMatrix);
 		//スクリーン座標系
 		screenVertices1[zIndex] = Transform(ndcVertex1[zIndex], viewportMatrix);
 		screenVertices2[zIndex] = Transform(ndcVertex2[zIndex], viewportMatrix);
+
+		if (zIndex == 5) {
+			color = BLACK;
+		}
+		else {
+			color = 0xAAAAAAFF;
+		}
 		Novice::DrawLine(int(screenVertices1[zIndex].x), int(screenVertices1[zIndex].y),
 			int(screenVertices2[zIndex].x), int(screenVertices2[zIndex].y),
-			0xAAAAAAFF);
+			color);
 	}
 
-	
+
 }
 
 void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
-	const uint32_t kSubdivision = 10;//分割数
+	const uint32_t kSubdivision = 20;//分割数
 	const float pi = 3.14f;//π
-	const float kLonEvery = 2*pi / kSubdivision;//経度分割1つ分の角度(φd)
+	const float kLonEvery = 2.0f * pi / kSubdivision;//経度分割1つ分の角度(φd)
 	const float kLatEvery = pi / kSubdivision;//緯度分割1つ分の角度(θd)
-	
+
 	//緯度の方向に分割-π/2~π/2
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
 		float lat = -pi / 2.0f + kLatEvery * latIndex;//現在の緯度(θ)
@@ -380,17 +395,17 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
 			float lon = lonIndex * kLonEvery;//現在の経度(φ)
 			Vector3 a, b, c;
-			a = { std::cos(lat) * std::cos(lon) + sphere.center.x,
-				  std::sin(lat) + sphere.center.y,
-				  std::cos(lat) * std::sin(lon) + sphere.center.z };
+			a = { std::cos(lat) * std::cos(lon) * sphere.radius + sphere.center.x,
+				  std::sin(lat) * sphere.radius + sphere.center.y ,
+				  std::cos(lat) * std::sin(lon)* sphere.radius + sphere.center.z };
 
-			b = { std::cos(lat+ kLatEvery) * std::cos(lon) + sphere.center.x,
-				  std::sin(lat + kLatEvery) + sphere.center.y,
-				  std::cos(lat + kLatEvery) * std::sin(lon) + sphere.center.z };
+			b = { std::cos(lat + kLatEvery) * std::cos(lon) * sphere.radius + sphere.center.x ,
+				  std::sin(lat + kLatEvery)* sphere.radius + sphere.center.y ,
+				  std::cos(lat + kLatEvery) * std::sin(lon)* sphere.radius + sphere.center.z };
 
-			c = { std::cos(lat) * std::cos(lon+ kLonEvery) + sphere.center.x,
-				  std::sin(lat) + sphere.center.y,
-				  std::cos(lat) * std::sin(lon+ kLonEvery) + sphere.center.z };
+			c = { std::cos(lat) * std::cos(lon + kLonEvery) * sphere.radius + sphere.center.x,
+				  std::sin(lat)* sphere.radius + sphere.center.y ,
+				  std::cos(lat) * std::sin(lon + kLonEvery)* sphere.radius + sphere.center.z  };
 
 			//正規化デバイス座標系
 			Vector3 ndcVertexA = Transform(a, viewProjectionMatrix);
@@ -406,7 +421,7 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 				int(screenVerticesB.x), int(screenVerticesB.y),
 				color);
 			//bc
-			Novice::DrawLine(int(screenVerticesB.x), int(screenVerticesB.y),
+			Novice::DrawLine(int(screenVerticesA.x), int(screenVerticesA.y),
 				int(screenVerticesC.x), int(screenVerticesC.y),
 				color);
 
@@ -414,6 +429,10 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 	}
 
 }
+
+	
+
+
 
 Vector3 Project(const Vector3& v1, const Vector3& v2) {
 	float b = Length(v2);
@@ -512,12 +531,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Vector3 project = Project(Subract(point, segment.origin), segment.deff);
 		Vector3 closesPoint = ClosestPoint(point, segment);
 
-
+		Sphere pointSphere{ point,0.01f };
+		Sphere closestPointSphere{ closesPoint,0.01f };
 
 		ImGui::Begin("Window");
 		ImGui::DragFloat3("CamerTranslate", &cameraTranslate.x, 0.01f);
 		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
-		
+		ImGui::DragFloat3("Point", &point.x, 0.01f);
+		ImGui::DragFloat3("Segment origin", &segment.origin.x, 0.01f);
+		ImGui::DragFloat3("Segment deff", &segment.deff.x, 0.01f);
+		ImGui::DragFloat3("Project", &project.x, 0.01f);
 		ImGui::End();
 
 		///
@@ -528,8 +551,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		Sphere pointSphere{ point,0.01f };
-		Sphere closestPointSphere{ closesPoint,0.01f };
 
 		DrawSphere(pointSphere, viewProjectionMatrix, viewportMatrix, RED);
 		DrawSphere(closestPointSphere, viewProjectionMatrix, viewportMatrix, BLACK);
