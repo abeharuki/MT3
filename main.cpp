@@ -324,6 +324,16 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 	return dot;
 };
 
+bool IsCollision(const Sphere& s1, const Sphere& s2) {
+	bool collision  = false;
+	//2つの球の中心点の距離を求める
+	float distance = Length(Subract(s2.center, s1.center));
+	if (distance <= s1.radius + s2.radius) {
+		collision = true;
+	}
+	
+	return collision;
+}
 
 void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix) {
 	const float kGridHalfWidth = 2.0f;//Gridの半分の幅
@@ -383,7 +393,7 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 }
 
 void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
-	const uint32_t kSubdivision = 20;//分割数
+	const uint32_t kSubdivision = 10;//分割数
 	const float pi = 3.14f;//π
 	const float kLonEvery = 2.0f * pi / kSubdivision;//経度分割1つ分の角度(φd)
 	const float kLatEvery = pi / kSubdivision;//緯度分割1つ分の角度(θd)
@@ -434,52 +444,12 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 
 
 
-Vector3 Project(const Vector3& v1, const Vector3& v2) {
-	float b = Length(v2);
-	float t = (Dot(v1, v2) / (b * b));
-	Vector3 project;
-	project = Multiply(t, v2);
-
-	return project;
-};
-
-Vector3 ClosestPoint(const Vector3& point, const Segment& segment) {
-	Vector3 a = Subract(point, segment.origin);
-	float b = Length(segment.deff);
-	float t = (Dot(a, segment.deff) / (b * b));
-	Vector3 tb = Multiply(t, segment.deff);
-	Vector3 closesPoint;
-	closesPoint = Add(segment.origin, tb);
-
-	return closesPoint;
-};
-
 static const int kRowHeight = 20;
 static const int kColumnWidth = 60;
 
 static const int kWindowWidtht = 1280;
 static const int kWindowHeight = 720;
 
-
-void VectorScreenPrintf(int x, int y, const Vector3& vector, const char* label) {
-	Novice::ScreenPrintf(x, y, "%.02f", vector.x);
-	Novice::ScreenPrintf(x + kColumnWidth, y, "%.02f", vector.y);
-	Novice::ScreenPrintf(x + kColumnWidth * 2, y, "%.02f", vector.z);
-	Novice::ScreenPrintf(x + kColumnWidth * 3, y, "%s", label);
-}
-
-void MatrixScreenPrintf(int x, int y, const  Matrix4x4& matrix, const char* label) {
-	Novice::ScreenPrintf(x, y, "%s\n", label);
-	for (int row = 0; row < 4; ++row) {
-		for (int column = 0; column < 4; ++column) {
-
-			Novice::ScreenPrintf(
-				x + column * kColumnWidth, y + row * kRowHeight + 20, "%6.02f", matrix.m[row][column]
-			);
-
-		}
-	}
-}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -491,6 +461,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
 	
+	Sphere sphere1
+	{ 0,0,3,
+	  1.0f };
+	Sphere sphere2
+	{ 1,0,3,0.35f };
+	int color = WHITE;
 
 	Vector3 rotate{0,0,0};
 	Vector3 translate{0,0,0};
@@ -528,19 +504,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Matrix4x4 viewportMatrix = MakeViewportMatrix(0, 0, float(kWindowWidtht), float(kWindowHeight), 0.0f, 1.0f);
 		
 
-		Vector3 project = Project(Subract(point, segment.origin), segment.deff);
-		Vector3 closesPoint = ClosestPoint(point, segment);
+		if (IsCollision(sphere1, sphere2)) {
+			color = RED;
+		}
+		else {
+			color = WHITE;
+		}
 
-		Sphere pointSphere{ point,0.01f };
-		Sphere closestPointSphere{ closesPoint,0.01f };
+	
 
 		ImGui::Begin("Window");
 		ImGui::DragFloat3("CamerTranslate", &cameraTranslate.x, 0.01f);
 		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("Point", &point.x, 0.01f);
-		ImGui::DragFloat3("Segment origin", &segment.origin.x, 0.01f);
-		ImGui::DragFloat3("Segment deff", &segment.deff.x, 0.01f);
-		ImGui::DragFloat3("Project", &project.x, 0.01f);
+		ImGui::DragFloat3("Sphere1 center", &sphere1.center.x, 0.01f);
+		ImGui::DragFloat("Sphere1 radius", &sphere1.radius, 0.01f);
+		
+		ImGui::DragFloat3("Sphere2 center", &sphere2.center.x, 0.01f);
+		ImGui::DragFloat("Sphere2 radius", &sphere2.radius, 0.01f);
 		ImGui::End();
 
 		///
@@ -550,16 +530,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		/// ↓描画処理ここから
 		///
-
-
-		DrawSphere(pointSphere, viewProjectionMatrix, viewportMatrix, RED);
-		DrawSphere(closestPointSphere, viewProjectionMatrix, viewportMatrix, BLACK);
-
-		Vector3 start = Transform(Transform(segment.origin, viewProjectionMatrix), viewportMatrix);
-		Vector3 end = Transform(Transform(Add(segment.origin,segment.deff),viewProjectionMatrix), viewportMatrix);
-
-		Novice::DrawLine(int(start.x), int(start.y), int(end.x), int(end.y), WHITE);
 		DrawGrid(viewProjectionMatrix, viewportMatrix);
+
+		DrawSphere(sphere1, viewProjectionMatrix, viewportMatrix, color);
+		DrawSphere(sphere2, viewProjectionMatrix, viewportMatrix, WHITE);
+
+		
+		
 		///
 		/// ↑描画処理ここまで
 		///
