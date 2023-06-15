@@ -430,7 +430,7 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 			Novice::DrawLine(int(screenVerticesA.x), int(screenVerticesA.y),
 				int(screenVerticesB.x), int(screenVerticesB.y),
 				color);
-			//bc
+			//ac
 			Novice::DrawLine(int(screenVerticesA.x), int(screenVerticesA.y),
 				int(screenVerticesC.x), int(screenVerticesC.y),
 				color);
