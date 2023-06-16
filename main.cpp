@@ -344,13 +344,18 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 
 bool IsCollision(const Sphere& s1, const Plane& plane) {
 	bool collision  = false;
-	//2つの球の中心点の距離を求める
-	//float k1 = Length(Normalize(plane.normal))* Length(Normalize( s1.center)) - plane.distance;
-	float k2 = Length(Normalize(plane.normal)) * Length(Normalize(s1.center)) - plane.distance;
-	if (k2 <= s1.radius) {
+	//球の中心点の距離を求める
+	float k1 = Dot(Normalize(plane.normal), Normalize(s1.center)) - plane.distance;
+	//float k2 = -Length(Normalize(plane.normal)) * Length(Normalize(s1.center)) - plane.distance;
+	if (k1 <= s1.radius && -k1 <= s1.radius) {
 		collision = true;
 	}
 	
+	ImGui::Begin("Window");
+	
+	ImGui::DragFloat("k", &k1, 0.01f);
+	ImGui::End();
+
 	return collision;
 }
 
