@@ -494,6 +494,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Segment segment{ {-0.45f,0.3f,0.0f},{1.0f,0.5f,0.0f} };
 	Vector3 point{ -1.5f,0.6f,0.6f };
 
+	const float move = 0.01f;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -509,8 +510,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 
-
+		if (keys[DIK_W]) {
+			cameraTranslate.y += move;
+		}
+		else if (keys[DIK_S]) {
+			cameraTranslate.y -= move;
+		}
+		else if (keys[DIK_D]) {
+			cameraTranslate.x += move;
+		}
+		else if (keys[DIK_A]) {
+			cameraTranslate.x -= move;
+		}
 		
+		int value = Novice::GetWheel();
+
+		if (value > 0) {
+			cameraTranslate.z += move * 10;
+		}
+		else if (value < 0) {
+			cameraTranslate.z -= move*10;
+		}
+
 		//各行列の計算
 		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
 
@@ -535,7 +556,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	
 
 		ImGui::Begin("Window");
-		ImGui::DragFloat3("CamerTranslate", &cameraTranslate.x, 0.01f);
+		ImGui::Text("Wheel %d", value);
 		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
 		
 		ImGui::DragFloat3("Plane.Normal", &plane.normal.x, 0.01f);
