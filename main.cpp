@@ -342,19 +342,23 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 	return dot;
 };
 
-bool IsCollision(const Sphere& s1, const Plane& plane) {
+bool IsCollision(const Segment& line, const Plane& plane) {
 	bool collision  = false;
 	//球の中心点の距離を求める
-	float k1 = Dot(Normalize(plane.normal), Normalize(s1.center)) - plane.distance;
-	//float k2 = -Length(Normalize(plane.normal)) * Length(Normalize(s1.center)) - plane.distance;
-	if (k1 <= s1.radius && -k1 <= s1.radius) {
+	float dot = Dot(line.deff, plane.normal);
+	
+	if (dot == 0.0f) {
+		return collision;
+
+	}
+	
+	float t = plane.distance - Dot(line.origin, plane.normal) / dot;
+	
+	if (t == 2) {
 		collision = true;
 	}
 	
-	ImGui::Begin("Window");
 	
-	ImGui::DragFloat("k", &k1, 0.01f);
-	ImGui::End();
 
 	return collision;
 }
@@ -415,55 +419,6 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 
 
 }
-
-void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
-	const uint32_t kSubdivision = 10;//分割数
-	const float pi = 3.14f;//π
-	const float kLonEvery = 2.0f * pi / kSubdivision;//経度分割1つ分の角度(φd)
-	const float kLatEvery = pi / kSubdivision;//緯度分割1つ分の角度(θd)
-
-	//緯度の方向に分割-π/2~π/2
-	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
-		float lat = -pi / 2.0f + kLatEvery * latIndex;//現在の緯度(θ)
-		//経度の方向に分割
-		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
-			float lon = lonIndex * kLonEvery;//現在の経度(φ)
-			Vector3 a, b, c;
-			a = { std::cos(lat) * std::cos(lon) * sphere.radius + sphere.center.x,
-				  std::sin(lat) * sphere.radius + sphere.center.y ,
-				  std::cos(lat) * std::sin(lon)* sphere.radius + sphere.center.z };
-
-			b = { std::cos(lat + kLatEvery) * std::cos(lon) * sphere.radius + sphere.center.x ,
-				  std::sin(lat + kLatEvery)* sphere.radius + sphere.center.y ,
-				  std::cos(lat + kLatEvery) * std::sin(lon)* sphere.radius + sphere.center.z };
-
-			c = { std::cos(lat) * std::cos(lon + kLonEvery) * sphere.radius + sphere.center.x,
-				  std::sin(lat)* sphere.radius + sphere.center.y ,
-				  std::cos(lat) * std::sin(lon + kLonEvery)* sphere.radius + sphere.center.z  };
-
-			//正規化デバイス座標系
-			Vector3 ndcVertexA = Transform(a, viewProjectionMatrix);
-			Vector3 ndcVertexB = Transform(b, viewProjectionMatrix);
-			Vector3 ndcVertexC = Transform(c, viewProjectionMatrix);
-			//スクリーン座標系
-			Vector3 screenVerticesA = Transform(ndcVertexA, viewportMatrix);
-			Vector3 screenVerticesB = Transform(ndcVertexB, viewportMatrix);
-			Vector3 screenVerticesC = Transform(ndcVertexC, viewportMatrix);
-
-			//ab
-			Novice::DrawLine(int(screenVerticesA.x), int(screenVerticesA.y),
-				int(screenVerticesB.x), int(screenVerticesB.y),
-				color);
-			//ac
-			Novice::DrawLine(int(screenVerticesA.x), int(screenVerticesA.y),
-				int(screenVerticesC.x), int(screenVerticesC.y),
-				color);
-
-		}
-	}
-
-}
-
 	
 
 static const int kRowHeight = 20;
@@ -524,9 +479,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
 	
-	Sphere sphere1
-	{ 0,0,3,
-	  1.0f };
+	
 	Plane plane
 	{ 0.0f,1.0f,0.0f,
 	  1.0f};
@@ -538,7 +491,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraTranslate{ 0.0f,1.9f,-5.49f };
 	Vector3 cameraRotate{ 0.26f,0.0f,0.0f };
 
-	Segment segment{ {-2.0f,-1.0f,0.0f},{3.0f,2.0f,2.0f} };
+	Segment segment{ {-0.45f,0.3f,0.0f},{1.0f,0.5f,0.0f} };
 	Vector3 point{ -1.5f,0.6f,0.6f };
 
 
@@ -570,7 +523,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		
 		plane.normal = Normalize(plane.normal);
 
-		if (IsCollision(sphere1, plane)) {
+		if (IsCollision(segment, plane)) {
 			color = RED;
 		}
 		else {
@@ -582,12 +535,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::Begin("Window");
 		ImGui::DragFloat3("CamerTranslate", &cameraTranslate.x, 0.01f);
 		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
-
-		ImGui::DragFloat3("Sphere1 center", &sphere1.center.x, 0.01f);
-		ImGui::DragFloat("Sphere1 radius", &sphere1.radius, 0.01f);
 		
 		ImGui::DragFloat3("Plane.Normal", &plane.normal.x, 0.01f);
 		ImGui::DragFloat("Plane Distance", &plane.distance, 0.01f);
+
+		ImGui::DragFloat3("Segment Origin", &segment.origin.x, 0.01f);
+		ImGui::DragFloat3("Segment Diff", &segment.deff.x, 0.01f);
+
+		
 		ImGui::End();
 
 		///
@@ -599,7 +554,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		DrawGrid(viewProjectionMatrix, viewportMatrix);
 
-		DrawSphere(sphere1, viewProjectionMatrix, viewportMatrix, color);
+		Novice::DrawLine(int(segment.origin.x), int(segment.origin.y),
+			int(segment.deff.x), int(segment.deff.y), color);
 		
 		DrawPlane(plane, viewProjectionMatrix, viewportMatrix, planeColor);
 
