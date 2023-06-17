@@ -353,8 +353,8 @@ bool IsCollision(const Segment& line, const Plane& plane) {
 	}
 	
 	float t = (plane.distance - Dot(line.origin, plane.normal)) / dot;
-	float t2 = Length(Normalize(line.deff));
-	if (t > 0 && t< t2) {
+	float length = Length(Normalize(line.deff));
+	if (t > 0 && t< length) {
 		collision = true;
 	}
 	
