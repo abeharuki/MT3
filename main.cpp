@@ -348,13 +348,13 @@ bool IsCollision(const Segment& line, const Plane& plane) {
 	float dot = Dot(line.deff, plane.normal);
 	
 	if (dot == 0.0f) {
-		return collision;
+		collision = false;
 
 	}
 	
-	float t = plane.distance - Dot(line.origin, plane.normal) / dot;
-	
-	if (t == 2) {
+	float t = (plane.distance - Dot(line.origin, plane.normal)) / dot;
+	float t2 = Length(Normalize(line.deff));
+	if (t > 0 && t< t2) {
 		collision = true;
 	}
 	
@@ -508,6 +508,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
+
+
 		
 		//各行列の計算
 		Matrix4x4 worldMatrix = MakeAffineMatrix({ 1.0f,1.0f,1.0f }, rotate, translate);
@@ -554,8 +556,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		DrawGrid(viewProjectionMatrix, viewportMatrix);
 
-		Novice::DrawLine(int(segment.origin.x), int(segment.origin.y),
-			int(segment.deff.x), int(segment.deff.y), color);
+
+		Vector3 start = Transform(Transform(segment.origin, viewProjectionMatrix), viewportMatrix);
+		Vector3 end = Transform(Transform(Add(segment.origin, segment.deff), viewProjectionMatrix), viewportMatrix);
+		Novice::DrawLine(int(start.x), int(start.y),
+			int(end.x), int(end.y), color);
 		
 		DrawPlane(plane, viewProjectionMatrix, viewportMatrix, planeColor);
 
