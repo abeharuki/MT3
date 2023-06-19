@@ -363,6 +363,7 @@ bool IsCollision(const Segment& line, const Plane& plane) {
 	return collision;
 }
 
+
 void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix) {
 	const float kGridHalfWidth = 2.0f;//Gridの半分の幅
 	const uint32_t kSubdivision = 10;//分割数
@@ -376,8 +377,8 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 	int color;
 	//奥から手前の線を順々に引いていく
 	for (uint32_t xIndex = 0; xIndex <= kSubdivision; ++xIndex) {
-		startLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth ,0,0 };
-		endLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth    ,0,   kGridEvery * kSubdivision };
+		startLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth ,0,-kGridHalfWidth };
+		endLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth    ,0,   (kGridEvery * kSubdivision) - kGridHalfWidth };
 		//正規化デバイス座標系
 		ndcVertex1[xIndex] = Transform(startLine[xIndex], viewProjectionMatrix);
 		ndcVertex2[xIndex] = Transform(endLine[xIndex], viewProjectionMatrix);
@@ -397,8 +398,8 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 
 
 	for (uint32_t zIndex = 0; zIndex <= kSubdivision; ++zIndex) {
-		startLine[zIndex] = { -kGridHalfWidth,0,zIndex * kGridEvery };
-		endLine[zIndex] = { (kGridEvery * kSubdivision) - kGridHalfWidth     ,0,      zIndex * kGridEvery };
+		startLine[zIndex] = { -kGridHalfWidth,0,(zIndex * kGridEvery) - kGridHalfWidth };
+		endLine[zIndex] = { (kGridEvery * kSubdivision) - kGridHalfWidth     ,0,      (zIndex * kGridEvery) - kGridHalfWidth };
 		//正規化デバイス座標系
 		ndcVertex1[zIndex] = Transform(startLine[zIndex], viewProjectionMatrix);
 		ndcVertex2[zIndex] = Transform(endLine[zIndex], viewProjectionMatrix);
@@ -419,6 +420,7 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 
 
 }
+
 	
 
 static const int kRowHeight = 20;
