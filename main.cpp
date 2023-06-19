@@ -345,19 +345,18 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 bool IsCollision(const Sphere& s1, const Plane& plane) {
 	bool collision  = false;
 	//球の中心点の距離を求める
-	float k1 = Dot(Normalize(plane.normal), Normalize(s1.center)) - plane.distance;
+	float k1 = Dot(plane.normal, s1.center) - plane.distance;
+
 	//float k2 = -Length(Normalize(plane.normal)) * Length(Normalize(s1.center)) - plane.distance;
 	if (k1 <= s1.radius && -k1 <= s1.radius) {
 		collision = true;
 	}
 	
-	ImGui::Begin("Window");
 	
-	ImGui::DragFloat("k", &k1, 0.01f);
-	ImGui::End();
 
 	return collision;
 }
+
 
 void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix) {
 	const float kGridHalfWidth = 2.0f;//Gridの半分の幅
@@ -372,8 +371,8 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 	int color;
 	//奥から手前の線を順々に引いていく
 	for (uint32_t xIndex = 0; xIndex <= kSubdivision; ++xIndex) {
-		startLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth ,0,0 };
-		endLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth    ,0,   kGridEvery * kSubdivision };
+		startLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth ,0,-kGridHalfWidth };
+		endLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth    ,0,   (kGridEvery * kSubdivision) - kGridHalfWidth };
 		//正規化デバイス座標系
 		ndcVertex1[xIndex] = Transform(startLine[xIndex], viewProjectionMatrix);
 		ndcVertex2[xIndex] = Transform(endLine[xIndex], viewProjectionMatrix);
@@ -393,8 +392,8 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 
 
 	for (uint32_t zIndex = 0; zIndex <= kSubdivision; ++zIndex) {
-		startLine[zIndex] = { -kGridHalfWidth,0,zIndex * kGridEvery };
-		endLine[zIndex] = { (kGridEvery * kSubdivision) - kGridHalfWidth     ,0,      zIndex * kGridEvery };
+		startLine[zIndex] = { -kGridHalfWidth,0,(zIndex * kGridEvery) - kGridHalfWidth };
+		endLine[zIndex] = { (kGridEvery * kSubdivision) - kGridHalfWidth     ,0,      (zIndex * kGridEvery) - kGridHalfWidth };
 		//正規化デバイス座標系
 		ndcVertex1[zIndex] = Transform(startLine[zIndex], viewProjectionMatrix);
 		ndcVertex2[zIndex] = Transform(endLine[zIndex], viewProjectionMatrix);
@@ -415,6 +414,7 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 
 
 }
+
 
 void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
 	const uint32_t kSubdivision = 10;//分割数
