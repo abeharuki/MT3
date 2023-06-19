@@ -49,6 +49,9 @@ struct Plane
 
 };
 
+struct Triangle {
+	Vector3 vertices[3];//頂点
+};
 
 //加算
 Vector3 Add(const Vector3& v1, const Vector3& v2) {
@@ -342,26 +345,14 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 	return dot;
 };
 
-bool IsCollision(const Segment& line, const Plane& plane) {
+/*
+bool IsCollision(const Segment& line, const Triangle& triangle) {
 	bool collision  = false;
-	//球の中心点の距離を求める
-	float dot = Dot(line.deff, plane.normal);
-	
-	if (dot == 0.0f) {
-		collision = false;
-
-	}
-	
-	float t = (plane.distance - Dot(line.origin, plane.normal)) / dot;
-	float length = Length(Normalize(line.deff));
-	if (t > 0 && t< length) {
-		collision = true;
-	}
-	
 	
 
 	return collision;
 }
+*/
 
 void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix) {
 	const float kGridHalfWidth = 2.0f;//Gridの半分の幅
@@ -376,8 +367,8 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 	int color;
 	//奥から手前の線を順々に引いていく
 	for (uint32_t xIndex = 0; xIndex <= kSubdivision; ++xIndex) {
-		startLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth ,0,0 };
-		endLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth    ,0,   kGridEvery * kSubdivision };
+		startLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth ,0,-kGridHalfWidth };
+		endLine[xIndex] = { (xIndex * kGridEvery) - kGridHalfWidth    ,0,   (kGridEvery * kSubdivision) - kGridHalfWidth };
 		//正規化デバイス座標系
 		ndcVertex1[xIndex] = Transform(startLine[xIndex], viewProjectionMatrix);
 		ndcVertex2[xIndex] = Transform(endLine[xIndex], viewProjectionMatrix);
@@ -397,8 +388,8 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 
 
 	for (uint32_t zIndex = 0; zIndex <= kSubdivision; ++zIndex) {
-		startLine[zIndex] = { -kGridHalfWidth,0,zIndex * kGridEvery };
-		endLine[zIndex] = { (kGridEvery * kSubdivision) - kGridHalfWidth     ,0,      zIndex * kGridEvery };
+		startLine[zIndex] = { -kGridHalfWidth,0,(zIndex * kGridEvery) - kGridHalfWidth };
+		endLine[zIndex] = { (kGridEvery * kSubdivision) - kGridHalfWidth     ,0,      (zIndex * kGridEvery) - kGridHalfWidth };
 		//正規化デバイス座標系
 		ndcVertex1[zIndex] = Transform(startLine[zIndex], viewProjectionMatrix);
 		ndcVertex2[zIndex] = Transform(endLine[zIndex], viewProjectionMatrix);
@@ -436,37 +427,23 @@ Vector3 Perpendicular(const Vector3& vector) {
 }
 
 //平面の描画
-void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
-	Vector3 center = Multiply(plane.distance, plane.normal);
-	Vector3 perpendiculars[4];
-	perpendiculars[0] = Normalize(Perpendicular(plane.normal));
-	perpendiculars[1] = { -perpendiculars[0].x,-perpendiculars[0].y,-perpendiculars[0].z };
-	perpendiculars[2] = Cross(plane.normal, perpendiculars[0]);
-	perpendiculars[3] = { -perpendiculars[2].x,-perpendiculars[2].y,-perpendiculars[2].z };
+void DrawTriangle(const Triangle& triangle, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+	
+	Vector3 screenVertices[3];
+	for (int32_t index = 0; index < 3; ++index) {
+		Vector3 ndcVertex = Transform(triangle.vertices[index], viewProjectionMatrix);
+			//スクリーン座標系
+		screenVertices[index] = Transform(ndcVertex, viewportMatrix);
 
-	Vector3 points[4];
-	for (int32_t index = 0; index < 4; ++index) {
-		Vector3 extend = Multiply(2.0f, perpendiculars[index]);
-		Vector3 point = Add(center, extend);
-		points[index] = Transform(Transform(point, viewProjectionMatrix), viewportMatrix);
 	}
 
 
-	Novice::DrawLine(int(points[0].x), int(points[0].y),
-		int(points[2].x), int(points[2].y),
-		color);
+	Novice::DrawTriangle(
+		int(screenVertices[0].x), int(screenVertices[0].y), int(screenVertices[1].x), int(screenVertices[1].y),
+		int(screenVertices[2].x), int(screenVertices[2].y), color, kFillModeWireFrame
+	);
 
-	Novice::DrawLine(int(points[2].x), int(points[2].y),
-		int(points[1].x), int(points[1].y),
-		color);
-
-	Novice::DrawLine(int(points[0].x), int(points[0].y),
-		int(points[3].x), int(points[3].y),
-		color);
-
-	Novice::DrawLine(int(points[1].x), int(points[1].y),
-		int(points[3].x), int(points[3].y),
-		color);
+	
 }
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -480,11 +457,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char preKeys[256] = { 0 };
 	
 	
-	Plane plane
-	{ 0.0f,1.0f,0.0f,
-	  1.0f};
+	Triangle triangle{
+		{
+		  {0.0f,0.1f,0 },//上
+		  { 0.1f, 0.0f, 0 },//右下
+		  { -0.1f,0.0f,0 }//左下
+		}
+	};
+
+	
+
 	int color = WHITE;
-	uint32_t planeColor = WHITE;
+	uint32_t triangleColor = WHITE;
 
 	Vector3 rotate{0,0,0};
 	Vector3 translate{0,0,0};
@@ -544,23 +528,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		//ViewportMatrixを作る
 		Matrix4x4 viewportMatrix = MakeViewportMatrix(0, 0, float(kWindowWidtht), float(kWindowHeight), 0.0f, 1.0f);
 		
-		plane.normal = Normalize(plane.normal);
+		
 
+		/*
 		if (IsCollision(segment, plane)) {
 			color = RED;
 		}
 		else {
 			color = WHITE;
 		}
-
+		*/
 	
 
 		ImGui::Begin("Window");
 		ImGui::Text("Wheel %d", value);
 		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
 		
-		ImGui::DragFloat3("Plane.Normal", &plane.normal.x, 0.01f);
-		ImGui::DragFloat("Plane Distance", &plane.distance, 0.01f);
+		ImGui::DragFloat3("triangle.vertices[0]", &triangle.vertices[0].x, 0.01f);
+		ImGui::DragFloat3("triangle.vertices[1]", &triangle.vertices[1].x, 0.01f);
+		ImGui::DragFloat3("triangle.vertices[2]", &triangle.vertices[2].x, 0.01f);
 
 		ImGui::DragFloat3("Segment Origin", &segment.origin.x, 0.01f);
 		ImGui::DragFloat3("Segment Diff", &segment.deff.x, 0.01f);
@@ -583,8 +569,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::DrawLine(int(start.x), int(start.y),
 			int(end.x), int(end.y), color);
 		
-		DrawPlane(plane, viewProjectionMatrix, viewportMatrix, planeColor);
-
+		DrawTriangle(triangle,viewProjectionMatrix, viewportMatrix, triangleColor);
+		
 		///
 		/// ↑描画処理ここまで
 		///
