@@ -345,14 +345,61 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 	return dot;
 };
 
-/*
+
 bool IsCollision(const Segment& line, const Triangle& triangle) {
 	bool collision  = false;
+	//三角形から平面を求める
+	Vector3 v1 = Subract(triangle.vertices[1], triangle.vertices[0]);
+	Vector3 v2 = Subract(triangle.vertices[2], triangle.vertices[1]);
+	Vector3 n = Cross(v1, v2);
+	n = Normalize(n);
+	//距離を求める
+	float d = Dot(triangle.vertices[0], n);
+
+	//法線と線の内積を求める
+	float  dot= Dot(n, line.deff);
+
+	if (dot == 0.0f) {
+		collision = false;
+
+	}
+
+
+	float t = (d - Dot(line.origin, n)) / dot;
+	float length = Length(Normalize(line.deff));
+
+	//衝突点
+	Vector3 p = Add(line.origin,Multiply(t,line.deff));
+
+	//各辺を結んだベクトルと、頂点衝突点pを結んだベクトルのクロス積をとる
+	Vector3 v01 = Normalize(Subract(triangle.vertices[0], triangle.vertices[1]));
+	Vector3 v12 = Normalize(Subract(triangle.vertices[1], triangle.vertices[2]));
+	Vector3 v20 = Normalize(Subract(triangle.vertices[2], triangle.vertices[0]));
+	Vector3 v0p = Normalize(Subract(triangle.vertices[0], p));
+	Vector3 v1p = Normalize(Subract(triangle.vertices[1], p));
+	Vector3 v2p = Normalize(Subract(triangle.vertices[2], p));
 	
 
+
+
+	Vector3 cross01 = Cross(v01,v1p);
+	Vector3 cross12 = Cross(v12, v2p);
+	Vector3 cross20 = Cross(v20, v0p);
+
+	if (t > 0 && t < length) {
+		
+		if (Dot(cross01, n) >= 0.0f &&
+			Dot(cross12, n) >= 0.0f &&
+			Dot(cross20, n) >= 0.0f) {
+			
+			collision = true;
+		}
+	}
+
+	
 	return collision;
 }
-*/
+
 
 void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix) {
 	const float kGridHalfWidth = 2.0f;//Gridの半分の幅
@@ -426,7 +473,7 @@ Vector3 Perpendicular(const Vector3& vector) {
 	return { 0.0f,-vector.z,vector.y };
 }
 
-//平面の描画
+//三角形の描画
 void DrawTriangle(const Triangle& triangle, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
 	
 	Vector3 screenVertices[3];
@@ -459,9 +506,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	
 	Triangle triangle{
 		{
-		  {0.0f,0.1f,0 },//上
-		  { 0.1f, 0.0f, 0 },//右下
-		  { -0.1f,0.0f,0 }//左下
+		  {0.0f,1.0f,0 },//上
+		  { 1.0f, 0.0f, 0 },//右下
+		  { -1.0f,0.0f,0 }//左下
 		}
 	};
 
@@ -530,23 +577,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		
 		
 
-		/*
-		if (IsCollision(segment, plane)) {
+		
+		if (IsCollision(segment, triangle)) {
 			color = RED;
 		}
 		else {
 			color = WHITE;
 		}
-		*/
+		
 	
 
 		ImGui::Begin("Window");
-		ImGui::Text("Wheel %d", value);
 		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
 		
-		ImGui::DragFloat3("triangle.vertices[0]", &triangle.vertices[0].x, 0.01f);
-		ImGui::DragFloat3("triangle.vertices[1]", &triangle.vertices[1].x, 0.01f);
-		ImGui::DragFloat3("triangle.vertices[2]", &triangle.vertices[2].x, 0.01f);
+		ImGui::DragFloat3("triangle.v[0]", &triangle.vertices[0].x, 0.01f);
+		ImGui::DragFloat3("triangle.v[1]", &triangle.vertices[1].x, 0.01f);
+		ImGui::DragFloat3("triangle.v[2]", &triangle.vertices[2].x, 0.01f);
 
 		ImGui::DragFloat3("Segment Origin", &segment.origin.x, 0.01f);
 		ImGui::DragFloat3("Segment Diff", &segment.deff.x, 0.01f);
