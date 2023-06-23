@@ -53,6 +53,13 @@ struct Triangle {
 	Vector3 vertices[3];//頂点
 };
 
+
+struct AABB {
+	Vector3 min;//最小点
+	Vector3 max;//最大点
+
+};
+
 //加算
 Vector3 Add(const Vector3& v1, const Vector3& v2) {
 	Vector3 add;
@@ -346,54 +353,16 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 };
 
 
-bool IsCollision(const Segment& line, const Triangle& triangle) {
+bool IsCollision(const AABB& a, const AABB& b) {
 	bool collision  = false;
-	//三角形から平面を求める
-	Vector3 v1 = Subract(triangle.vertices[1], triangle.vertices[0]);
-	Vector3 v2 = Subract(triangle.vertices[2], triangle.vertices[1]);
-	Vector3 n = Cross(v1, v2);
-	n = Normalize(n);
-	//距離を求める
-	float d = Dot(triangle.vertices[0], n);
-
-	//法線と線の内積を求める
-	float  dot= Dot(n, line.deff);
-
-	if (dot == 0.0f) {
-		collision = false;
-
-	}
-
-
-	float t = (d - Dot(line.origin, n)) / dot;
-	float length = Length(Normalize(line.deff));
-
-	//衝突点
-	Vector3 p = Add(line.origin,Multiply(t,line.deff));
-
-	//各辺を結んだベクトルと、頂点衝突点pを結んだベクトルのクロス積をとる
-	Vector3 v01 = Normalize(Subract(triangle.vertices[0], triangle.vertices[1]));
-	Vector3 v12 = Normalize(Subract(triangle.vertices[1], triangle.vertices[2]));
-	Vector3 v20 = Normalize(Subract(triangle.vertices[2], triangle.vertices[0]));
-	Vector3 v0p = Normalize(Subract(triangle.vertices[0], p));
-	Vector3 v1p = Normalize(Subract(triangle.vertices[1], p));
-	Vector3 v2p = Normalize(Subract(triangle.vertices[2], p));
 	
 
-
-
-	Vector3 cross01 = Cross(v01,v1p);
-	Vector3 cross12 = Cross(v12, v2p);
-	Vector3 cross20 = Cross(v20, v0p);
-
-	if (t > 0 && t < length) {
+	if ((a.min.x <= b.max.x && a.max.x >= b.min.x)&&
+		(a.min.y <= b.max.y && a.max.y >= b.min.y)&&
+		(a.min.z <= b.max.z && a.max.z >= b.min.z)) {
 		
-		if (Dot(cross01, n) >= 0.0f &&
-			Dot(cross12, n) >= 0.0f &&
-			Dot(cross20, n) >= 0.0f) {
-			
-			collision = true;
-		}
+		
+	  collision = true;
 	}
 
 	
@@ -433,7 +402,7 @@ void DrawGrid(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMa
 			color);
 	}
 
-
+	//左から右
 	for (uint32_t zIndex = 0; zIndex <= kSubdivision; ++zIndex) {
 		startLine[zIndex] = { -kGridHalfWidth,0,(zIndex * kGridEvery) - kGridHalfWidth };
 		endLine[zIndex] = { (kGridEvery * kSubdivision) - kGridHalfWidth     ,0,      (zIndex * kGridEvery) - kGridHalfWidth };
@@ -465,32 +434,81 @@ static const int kColumnWidth = 60;
 static const int kWindowWidtht = 1280;
 static const int kWindowHeight = 720;
 
-//法線と垂直なベクトルを求める
-Vector3 Perpendicular(const Vector3& vector) {
-	if (vector.x != 0.0f || vector.y != 0.0f) {
-		return { -vector.y,vector.x,0.0f };
-	}
-	return { 0.0f,-vector.z,vector.y };
-}
 
-//三角形の描画
-void DrawTriangle(const Triangle& triangle, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+//AABBの描画
+void DrawAABB(const AABB& aabb, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+
+	Vector3 vertex[8];
 	
-	Vector3 screenVertices[3];
-	for (int32_t index = 0; index < 3; ++index) {
-		Vector3 ndcVertex = Transform(triangle.vertices[index], viewProjectionMatrix);
-			//スクリーン座標系
-		screenVertices[index] = Transform(ndcVertex, viewportMatrix);
+	Vector3 ndcVertex[8];
+	
+	Vector3 screenVertices[8];
 
-	}
-
-
-	Novice::DrawTriangle(
-		int(screenVertices[0].x), int(screenVertices[0].y), int(screenVertices[1].x), int(screenVertices[1].y),
-		int(screenVertices[2].x), int(screenVertices[2].y), color, kFillModeWireFrame
-	);
 
 	
+	vertex[0] = { aabb.min.x ,aabb.min.y ,aabb.min.z };
+	vertex[1] = { aabb.min.x ,aabb.min.y ,aabb.max.z };
+
+	vertex[2] = { aabb.max.x ,aabb.min.y ,aabb.min.z };
+	vertex[3] = { aabb.max.x ,aabb.min.y ,aabb.max.z };
+
+	vertex[4] = { aabb.min.x,aabb.max.y , aabb.min.z };
+	vertex[5] = { aabb.min.x,aabb.max.y , aabb.max.z };
+
+	vertex[6] = { aabb.max.x,aabb.max.y , aabb.min.z };
+	vertex[7] = { aabb.max.x,aabb.max.y , aabb.max.z };
+
+	
+	for (uint32_t Index = 0; Index < 8; ++Index) {
+		//正規化デバイス座標系
+		ndcVertex[Index] = Transform(vertex[Index], viewProjectionMatrix);
+		//スクリーン座標系
+		screenVertices[Index] = Transform(ndcVertex[Index], viewportMatrix);
+	}
+
+	//底辺
+	Novice::DrawLine(int(screenVertices[0].x), int(screenVertices[0].y),
+		int(screenVertices[1].x), int(screenVertices[1].y),
+		color);
+	Novice::DrawLine(int(screenVertices[0].x), int(screenVertices[0].y),
+		int(screenVertices[2].x), int(screenVertices[2].y),
+		color);
+	Novice::DrawLine(int(screenVertices[1].x), int(screenVertices[1].y),
+		int(screenVertices[3].x), int(screenVertices[3].y),
+		color);
+	Novice::DrawLine(int(screenVertices[2].x), int(screenVertices[2].y),
+		int(screenVertices[3].x), int(screenVertices[3].y),
+		color);
+
+	//上辺
+	Novice::DrawLine(int(screenVertices[4].x), int(screenVertices[4].y),
+		int(screenVertices[5].x), int(screenVertices[5].y),
+		color);
+	Novice::DrawLine(int(screenVertices[4].x), int(screenVertices[4].y),
+		int(screenVertices[6].x), int(screenVertices[6].y),
+		color);
+	Novice::DrawLine(int(screenVertices[5].x), int(screenVertices[5].y),
+		int(screenVertices[7].x), int(screenVertices[7].y),
+		color);
+	Novice::DrawLine(int(screenVertices[6].x), int(screenVertices[6].y),
+		int(screenVertices[7].x), int(screenVertices[7].y),
+		color);
+
+	//面
+	Novice::DrawLine(int(screenVertices[0].x), int(screenVertices[0].y),
+		int(screenVertices[4].x), int(screenVertices[4].y),
+		color);
+	Novice::DrawLine(int(screenVertices[1].x), int(screenVertices[1].y),
+		int(screenVertices[5].x), int(screenVertices[5].y),
+		color);
+	Novice::DrawLine(int(screenVertices[2].x), int(screenVertices[2].y),
+		int(screenVertices[6].x), int(screenVertices[6].y),
+		color);
+	Novice::DrawLine(int(screenVertices[3].x), int(screenVertices[3].y),
+		int(screenVertices[7].x), int(screenVertices[7].y),
+		color);
+
+
 }
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -504,26 +522,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char preKeys[256] = { 0 };
 	
 	
-	Triangle triangle{
-		{
-		  {0.0f,1.0f,0 },//上
-		  { 1.0f, 0.0f, 0 },//右下
-		  { -1.0f,0.0f,0 }//左下
-		}
+	AABB aabb1{
+		.min{-0.5f,-0.5f,-0.5f},
+		.max{0.0f,0.0f,0.0f},
+
 	};
 
-	
+	AABB aabb2{
+		.min{0.2f,0.2f,0.2f},
+		.max{1.0f,1.0f,1.0f},
+
+	};
 
 	int color = WHITE;
-	uint32_t triangleColor = WHITE;
+	
 
 	Vector3 rotate{0,0,0};
 	Vector3 translate{0,0,0};
 	Vector3 cameraTranslate{ 0.0f,1.9f,-5.49f };
 	Vector3 cameraRotate{ 0.26f,0.0f,0.0f };
 
-	Segment segment{ {-0.45f,0.3f,0.0f},{1.0f,0.5f,0.0f} };
-	Vector3 point{ -1.5f,0.6f,0.6f };
+	
 
 	const float move = 0.01f;
 
@@ -577,8 +596,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		
 		
 
-		
-		if (IsCollision(segment, triangle)) {
+		if (IsCollision(aabb1, aabb2)) {
 			color = RED;
 		}
 		else {
@@ -586,16 +604,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 		
 	
+		aabb1.min.x = (std::min)(aabb1.min.x, aabb1.max.x);
+		aabb1.max.x = (std::max)(aabb1.min.x, aabb1.max.x);
+		aabb1.min.y = (std::min)(aabb1.min.y, aabb1.max.y);
+		aabb1.max.y = (std::max)(aabb1.min.y, aabb1.max.y);
 
 		ImGui::Begin("Window");
 		ImGui::DragFloat3("CamerRotate", &cameraRotate.x, 0.01f);
 		
-		ImGui::DragFloat3("triangle.v[0]", &triangle.vertices[0].x, 0.01f);
-		ImGui::DragFloat3("triangle.v[1]", &triangle.vertices[1].x, 0.01f);
-		ImGui::DragFloat3("triangle.v[2]", &triangle.vertices[2].x, 0.01f);
-
-		ImGui::DragFloat3("Segment Origin", &segment.origin.x, 0.01f);
-		ImGui::DragFloat3("Segment Diff", &segment.deff.x, 0.01f);
+		ImGui::DragFloat3("aabb1.min", &aabb1.min.x, 0.01f);
+		ImGui::DragFloat3("aabb1.max", &aabb1.max.x, 0.01f);
+		ImGui::DragFloat3("aabb2.min", &aabb2.min.x, 0.01f);
+		ImGui::DragFloat3("aabb2.max", &aabb2.max.x, 0.01f);
 
 		
 		ImGui::End();
@@ -610,13 +630,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		DrawGrid(viewProjectionMatrix, viewportMatrix);
 
 
-		Vector3 start = Transform(Transform(segment.origin, viewProjectionMatrix), viewportMatrix);
-		Vector3 end = Transform(Transform(Add(segment.origin, segment.deff), viewProjectionMatrix), viewportMatrix);
-		Novice::DrawLine(int(start.x), int(start.y),
-			int(end.x), int(end.y), color);
-		
-		DrawTriangle(triangle,viewProjectionMatrix, viewportMatrix, triangleColor);
-		
+		DrawAABB(aabb1, viewProjectionMatrix, viewportMatrix, color);
+		DrawAABB(aabb2, viewProjectionMatrix, viewportMatrix, WHITE);
+
+
 		///
 		/// ↑描画処理ここまで
 		///
